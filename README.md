@@ -93,7 +93,7 @@ This project uses GitHub Actions for automated building and releasing.
 - **Release published**: Creates release assets
 
 #### Build Artifacts
-- `AudioToggle_Windows_v{version}.zip` - Complete Windows package containing:
+- `AudioToggle_Windows_v{version}.zip` - Compressed zip containing:
   - `AudioToggle.exe` - Windows executable
   - `README.txt` - Installation instructions
 
