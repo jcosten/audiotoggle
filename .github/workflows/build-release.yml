@@ -38,20 +38,34 @@ jobs:
 
     - name: Create release package
       run: |
-        # Create a directory for the release package
-        New-Item -ItemType Directory -Path "./release-package" -Force
+        # Create package directory with AudioToggle subfolder
+        New-Item -ItemType Directory -Path "./release-package/AudioToggle" -Force
         
-        # Copy files to release package
-        Copy-Item "./dist/windows/AudioToggle.exe" "./release-package/"
+        # Copy files into AudioToggle subfolder
+        Copy-Item "./dist/windows/AudioToggle.exe" "./release-package/AudioToggle/"
         
         # Get version from csproj
         $version = (Get-Content src/AudioToggle.csproj | Select-String -Pattern '<Version>(.*)</Version>' | ForEach-Object { $_.Matches.Groups[1].Value })
         
-        # Create simple README for the package
-        "AudioToggle v$version`n`nWindows utility for switching audio devices with global hotkeys.`n`nInstallation:`n1. Extract all files to a folder`n2. Run AudioToggle.exe`n3. Access settings via the system tray icon`n`nFiles:`n- AudioToggle.exe: Main application`n- settings.json: Configuration file`n`nFor more information, visit: https://github.com/${{ github.repository }}" | Out-File -FilePath "./release-package/README.txt" -Encoding UTF8
+        # Create README with version
+        $readmeContent = @"
+        AudioToggle v$version
         
-        # Create zip file
+        Installation:
+        1. Extract the ZIP file
+        2. Open the AudioToggle folder
+        3. Run AudioToggle.exe
+        4. Access settings via the system tray icon
+        
+        Package Contents:
+        - AudioToggle/AudioToggle.exe: Main application
+        "@
+        $readmeContent | Out-File -FilePath "./release-package/README.txt" -Encoding UTF8
+        
+        # Create ZIP with AudioToggle folder structure
         Compress-Archive -Path "./release-package/*" -DestinationPath "./AudioToggle_Windows_v$version.zip" -Force
+        
+        Write-Host "Release package created: AudioToggle_Windows_v$version.zip"
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
@@ -68,28 +82,37 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
+    - name: Validate repository access
+      run: |
+        echo "Repository: ${{ github.repository }}"
+        echo "Actor: ${{ github.actor }}"
+        echo "Token exists: ${{ secrets.GITHUB_TOKEN != '' }}"
+        
     - name: Checkout code
       uses: actions/checkout@v4
 
     - name: Extract version from csproj
       id: get_version
       run: |
-        VERSION=$(grep -oP '<Version>\K[^<]+' src/AudioToggle.csproj)
+        # Use sed instead of grep -oP for better compatibility
+        VERSION=$(sed -n 's/.*<Version>\(.*\)<\/Version>.*/\1/p' src/AudioToggle.csproj | head -1)
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Found version: $VERSION"
 
     - name: Check for existing release
       id: check_release
       run: |
-        if gh release view "v${{ steps.get_version.outputs.version }}" --repo ${{ github.repository }} >/dev/null 2>&1; then
+        # Use GitHub API instead of gh CLI for better reliability
+        RESPONSE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          "https://api.github.com/repos/${{ github.repository }}/releases/tags/v${{ steps.get_version.outputs.version }}")
+        
+        if echo "$RESPONSE" | grep -q '"id":'; then
           echo "exists=true" >> $GITHUB_OUTPUT
           echo "Release v${{ steps.get_version.outputs.version }} already exists"
         else
           echo "exists=false" >> $GITHUB_OUTPUT
           echo "Release v${{ steps.get_version.outputs.version }} does not exist"
         fi
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Download build artifacts
       if: steps.check_release.outputs.exists == 'false'
@@ -114,13 +137,13 @@ jobs:
 
           ### Installation
           1. Download `AudioToggle_Windows_v${{ steps.get_version.outputs.version }}.zip` from the assets below
-          2. Extract all files to a folder
-          3. Run AudioToggle.exe
-          4. Access settings via the system tray icon
+          2. Extract the ZIP file
+          3. Open the AudioToggle folder
+          4. Run AudioToggle.exe
+          5. Access settings via the system tray icon
 
           ### Package Contents
-          - `AudioToggle.exe`: Main application
-          - `README.txt`: Installation instructions
+          - `AudioToggle/AudioToggle.exe`: Main application
 
           ### Changes
           - See commit history for detailed changes
