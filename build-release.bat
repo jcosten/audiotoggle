@@ -34,7 +34,6 @@ if not exist "release-package\AudioToggle" mkdir "release-package\AudioToggle"
 
 REM Copy files into AudioToggle subfolder
 copy "dist\windows\AudioToggle.exe" "release-package\AudioToggle\" >nul
-copy "dist\windows\settings.json" "release-package\AudioToggle\" >nul
 
 REM Extract version from csproj
 for /f "tokens=2 delims=<>" %%i in ('findstr "<Version>" src\AudioToggle.csproj') do set VERSION=%%i
@@ -50,7 +49,6 @@ echo 4. Access settings via the system tray icon >> "release-package\README.txt"
 echo. >> "release-package\README.txt"
 echo Package Contents: >> "release-package\README.txt"
 echo - AudioToggle/AudioToggle.exe: Main application >> "release-package\README.txt"
-echo - AudioToggle/settings.json: Configuration file >> "release-package\README.txt"
 
 REM Create ZIP with AudioToggle folder structure
 powershell -Command "Compress-Archive -Path 'release-package\*' -DestinationPath 'AudioToggle_Windows_v%VERSION%.zip' -Force"
