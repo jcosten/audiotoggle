@@ -1,4 +1,4 @@
-# AudioToggle - the tool windows should of had as a default feature
+# AudioToggle - One keyboard hotkey to toggle between audio devices
 
 AudioToggle is a W### Release Process
 1. **Update Version**: Run `.\update-version.ps1 -NewVersion "1.1.0"` or manually edit `src/AudioToggle.csproj`
@@ -95,7 +95,6 @@ This project uses GitHub Actions for automated building and releasing.
 #### Build Artifacts
 - `AudioToggle_Windows_v{version}.zip` - Complete Windows package containing:
   - `AudioToggle.exe` - Windows executable
-  - `settings.json` - Default settings file
   - `README.txt` - Installation instructions
 
 #### Release Process
