@@ -1,0 +1,22 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             RequestedThemeVariant="Dark"
+             x:Class="AudioToggle.App">
+  <Application.Styles>
+    <FluentTheme />
+  </Application.Styles>
+  <TrayIcon.Icons>
+    <TrayIcons>
+      <TrayIcon Icon="/assets/tray_icon.png"
+                ToolTipText="Audio Toggle">
+        <TrayIcon.Menu>
+          <NativeMenu>
+            <NativeMenuItem Header="Settings" Click="OnSettings_Click"/>
+            <NativeMenuItemSeparator/>
+            <NativeMenuItem Header="Exit" Click="OnExit_Click"/>
+          </NativeMenu>
+        </TrayIcon.Menu>
+      </TrayIcon>
+    </TrayIcons>
+  </TrayIcon.Icons>
+</Application>

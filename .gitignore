@@ -1,0 +1,40 @@
+# .gitignore for .NET, Avalonia, and Visual Studio
+# Build results
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio Code
+.vscode/
+
+# Avalonia designer files
+*.axaml.cs~
+*.axaml~
+
+# NuGet packages
+*.nupkg
+# NuGet restore files
+project.lock.json
+project.assets.json
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Publish output
+publish/
+
+# Others
+*.vspscc
+*.vssscc
+_ReSharper*/
+*.resharper
+*.DotSettings.user
