@@ -7,7 +7,6 @@ namespace AudioToggle
     {
         public MainWindow()
         {
-            System.Diagnostics.Debug.WriteLine("MainWindow constructor called");
             AvaloniaXamlLoader.Load(this);
         }
 

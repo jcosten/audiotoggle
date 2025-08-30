@@ -6,7 +6,6 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Avalonia.Interactivity;
-using GlobalHotKey;
 
 namespace AudioToggle
 {
@@ -14,6 +13,7 @@ namespace AudioToggle
     public partial class SettingsWindow : Window
     {
         private readonly AudioServiceAdapter audioServiceAdapter;
+        private static IHotKeyService hotKeyService = new HotKeyServiceAdapter();
         private List<DeviceViewModel> deviceViewModels;
         private static SettingsWindow _instance;
 
@@ -53,7 +53,7 @@ namespace AudioToggle
 
         private void InitializeAudioDevicesTab()
         {
-            var listBox = this.FindControl<ListBox>("AudioDevicesListBox");
+            var listBox = this.FindControl<ItemsControl>("AudioDevicesListBox");
 
             // Invalidate cache to ensure we get fresh device information
             this.audioServiceAdapter.InvalidateCache();
@@ -98,6 +98,22 @@ namespace AudioToggle
             var enabledDevices = devices.Where(d => d.IsEnabled).Select(d => d.Name).ToList();
             var json = System.Text.Json.JsonSerializer.Serialize(enabledDevices);
             PersistService.StoreString("enabledDevices", json);
+        }
+
+        private void DeviceText_PointerPressed(object sender, PointerPressedEventArgs e)
+        {
+            if (sender is TextBlock textBlock && deviceViewModels != null)
+            {
+                // Find the device view model that corresponds to this text block
+                var deviceName = textBlock.Text;
+                var deviceViewModel = deviceViewModels.FirstOrDefault(d => d.Name == deviceName);
+                
+                if (deviceViewModel != null)
+                {
+                    // Toggle the IsEnabled property
+                    deviceViewModel.IsEnabled = !deviceViewModel.IsEnabled;
+                }
+            }
         }
 
         private void InitializeHotkeysTab()
@@ -217,7 +233,7 @@ namespace AudioToggle
                 modifiers.Add("Win");
 
             // Get the main key (ignore modifier keys themselves)
-            string mainKey = null;
+            string mainKey;
             switch (e.Key)
             {
                 case Avalonia.Input.Key.LeftCtrl:
@@ -256,14 +272,14 @@ namespace AudioToggle
             {
                 var avaloniaKey = e.Key;
                 var globalModifiers = ConvertToGlobalHotKeyModifiers(e.KeyModifiers);
-                var globalKey = ConvertToGlobalHotKeyKey(avaloniaKey);
-                
+                var globalKey = hotKeyService.ConvertToGlobalHotKeyKey(avaloniaKey);
+
                 if (globalKey.HasValue)
                 {
                     // Unregister old hotkey and register new one
-                    HotKeyService.UnregisterKey();
+                    hotKeyService.UnregisterKey();
                     var hotKey = new GlobalHotKey.HotKey(globalKey.Value, globalModifiers);
-                    HotKeyService.RegisterHotKey(hotKey);
+                    hotKeyService.RegisterHotKey(hotKey);
                     
                     // Ensure the callback is registered
                     App.EnsureHotkeyCallbackRegistered();
@@ -299,101 +315,31 @@ namespace AudioToggle
             return result;
         }
 
-        private System.Windows.Input.Key? ConvertToGlobalHotKeyKey(Avalonia.Input.Key avaloniaKey)
-        {
-            // Map common Avalonia keys to System.Windows.Input.Key
-            switch (avaloniaKey)
-            {
-                case Avalonia.Input.Key.F1: return System.Windows.Input.Key.F1;
-                case Avalonia.Input.Key.F2: return System.Windows.Input.Key.F2;
-                case Avalonia.Input.Key.F3: return System.Windows.Input.Key.F3;
-                case Avalonia.Input.Key.F4: return System.Windows.Input.Key.F4;
-                case Avalonia.Input.Key.F5: return System.Windows.Input.Key.F5;
-                case Avalonia.Input.Key.F6: return System.Windows.Input.Key.F6;
-                case Avalonia.Input.Key.F7: return System.Windows.Input.Key.F7;
-                case Avalonia.Input.Key.F8: return System.Windows.Input.Key.F8;
-                case Avalonia.Input.Key.F9: return System.Windows.Input.Key.F9;
-                case Avalonia.Input.Key.F10: return System.Windows.Input.Key.F10;
-                case Avalonia.Input.Key.F11: return System.Windows.Input.Key.F11;
-                case Avalonia.Input.Key.F12: return System.Windows.Input.Key.F12;
-                case Avalonia.Input.Key.A: return System.Windows.Input.Key.A;
-                case Avalonia.Input.Key.B: return System.Windows.Input.Key.B;
-                case Avalonia.Input.Key.C: return System.Windows.Input.Key.C;
-                case Avalonia.Input.Key.D: return System.Windows.Input.Key.D;
-                case Avalonia.Input.Key.E: return System.Windows.Input.Key.E;
-                case Avalonia.Input.Key.F: return System.Windows.Input.Key.F;
-                case Avalonia.Input.Key.G: return System.Windows.Input.Key.G;
-                case Avalonia.Input.Key.H: return System.Windows.Input.Key.H;
-                case Avalonia.Input.Key.I: return System.Windows.Input.Key.I;
-                case Avalonia.Input.Key.J: return System.Windows.Input.Key.J;
-                case Avalonia.Input.Key.K: return System.Windows.Input.Key.K;
-                case Avalonia.Input.Key.L: return System.Windows.Input.Key.L;
-                case Avalonia.Input.Key.M: return System.Windows.Input.Key.M;
-                case Avalonia.Input.Key.N: return System.Windows.Input.Key.N;
-                case Avalonia.Input.Key.O: return System.Windows.Input.Key.O;
-                case Avalonia.Input.Key.P: return System.Windows.Input.Key.P;
-                case Avalonia.Input.Key.Q: return System.Windows.Input.Key.Q;
-                case Avalonia.Input.Key.R: return System.Windows.Input.Key.R;
-                case Avalonia.Input.Key.S: return System.Windows.Input.Key.S;
-                case Avalonia.Input.Key.T: return System.Windows.Input.Key.T;
-                case Avalonia.Input.Key.U: return System.Windows.Input.Key.U;
-                case Avalonia.Input.Key.V: return System.Windows.Input.Key.V;
-                case Avalonia.Input.Key.W: return System.Windows.Input.Key.W;
-                case Avalonia.Input.Key.X: return System.Windows.Input.Key.X;
-                case Avalonia.Input.Key.Y: return System.Windows.Input.Key.Y;
-                case Avalonia.Input.Key.Z: return System.Windows.Input.Key.Z;
-                case Avalonia.Input.Key.D0: return System.Windows.Input.Key.D0;
-                case Avalonia.Input.Key.D1: return System.Windows.Input.Key.D1;
-                case Avalonia.Input.Key.D2: return System.Windows.Input.Key.D2;
-                case Avalonia.Input.Key.D3: return System.Windows.Input.Key.D3;
-                case Avalonia.Input.Key.D4: return System.Windows.Input.Key.D4;
-                case Avalonia.Input.Key.D5: return System.Windows.Input.Key.D5;
-                case Avalonia.Input.Key.D6: return System.Windows.Input.Key.D6;
-                case Avalonia.Input.Key.D7: return System.Windows.Input.Key.D7;
-                case Avalonia.Input.Key.D8: return System.Windows.Input.Key.D8;
-                case Avalonia.Input.Key.D9: return System.Windows.Input.Key.D9;
-                case Avalonia.Input.Key.Space: return System.Windows.Input.Key.Space;
-                case Avalonia.Input.Key.Enter: return System.Windows.Input.Key.Enter;
-                case Avalonia.Input.Key.Escape: return System.Windows.Input.Key.Escape;
-                case Avalonia.Input.Key.Tab: return System.Windows.Input.Key.Tab;
-                case Avalonia.Input.Key.Back: return System.Windows.Input.Key.Back;
-                case Avalonia.Input.Key.Delete: return System.Windows.Input.Key.Delete;
-                case Avalonia.Input.Key.Insert: return System.Windows.Input.Key.Insert;
-                case Avalonia.Input.Key.Home: return System.Windows.Input.Key.Home;
-                case Avalonia.Input.Key.End: return System.Windows.Input.Key.End;
-                case Avalonia.Input.Key.PageUp: return System.Windows.Input.Key.PageUp;
-                case Avalonia.Input.Key.PageDown: return System.Windows.Input.Key.PageDown;
-                case Avalonia.Input.Key.Up: return System.Windows.Input.Key.Up;
-                case Avalonia.Input.Key.Down: return System.Windows.Input.Key.Down;
-                case Avalonia.Input.Key.Left: return System.Windows.Input.Key.Left;
-                case Avalonia.Input.Key.Right: return System.Windows.Input.Key.Right;
-                default: return null;
-            }
-        }
 
         private void OnResetHotkeyClicked(object sender, RoutedEventArgs e)
         {
             var hotkeyTextBox = this.FindControl<TextBox>("HotkeyTextBox");
-            var defaultHotkey = "Ctrl+Shift+F1";
-            
-            hotkeyTextBox.Text = defaultHotkey;
-            PersistService.StoreString("hotkey", defaultHotkey);
-            
+            var defaultHotKey = new GlobalHotKey.HotKey(System.Windows.Input.Key.F1, ModifierKeys.Control | ModifierKeys.Shift);
+            // convert defaultHotkey to string in human readable format
+            var defaultHotkeyString = hotKeyService.ConvertToString(defaultHotKey);
+
+            hotkeyTextBox.Text = defaultHotkeyString;
+            PersistService.StoreString("hotkey", defaultHotkeyString);
+
             // Register the default hotkey
             try
             {
-                HotKeyService.UnregisterKey();
-                var hotKey = new GlobalHotKey.HotKey(System.Windows.Input.Key.F5, ModifierKeys.Control | ModifierKeys.Alt);
-                HotKeyService.RegisterHotKey(hotKey);
+                hotKeyService.UnregisterKey();
+                hotKeyService.RegisterHotKey(defaultHotKey);
                 
                 // Ensure the callback is registered
                 App.EnsureHotkeyCallbackRegistered();
-                
-                hotkeyTextBox.Text = defaultHotkey + " ✓";
+
+                hotkeyTextBox.Text = defaultHotkeyString + " ✓";
             }
             catch (Exception ex)
             {
-                hotkeyTextBox.Text = defaultHotkey + " (Failed to register)";
+                hotkeyTextBox.Text = defaultHotkeyString + " (Failed to register)";
                 System.Diagnostics.Debug.WriteLine($"Failed to register default hotkey: {ex.Message}");
             }
         }

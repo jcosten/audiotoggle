@@ -2,26 +2,26 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:AudioToggle"
         x:Class="AudioToggle.SettingsWindow"
-        Title="Settings"
+        Title="Audio Toggle - Settings"
         Width="500"
         Height="400">
-    <TabControl>
+        <TabControl>
         <TabItem Header="Audio Devices">
             <StackPanel>
                 <TextBlock Text="Audio Devices:" Margin="10" />
                 <TextBlock Text="Check devices to include in hotkey cycling:" Margin="10,0,10,5" FontSize="12" Foreground="Gray"/>
                 <ScrollViewer Margin="10" Height="250" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <ListBox x:Name="AudioDevicesListBox">
-                        <ListBox.ItemTemplate>
+                    <ItemsControl x:Name="AudioDevicesListBox">
+                        <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type local:DeviceViewModel}">
-                                <StackPanel Orientation="Horizontal">
-                                    <CheckBox IsChecked="{Binding IsEnabled}" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="✓" Foreground="Green" Margin="0,0,5,0" IsVisible="{Binding IsDefault}" VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <CheckBox IsChecked="{Binding IsEnabled}" Margin="0,0,10,0" VerticalAlignment="Center"/>             
+                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center" PointerPressed="DeviceText_PointerPressed"/>
+                                    <TextBlock Text="  active  " Foreground="Green" Margin="0,0,5,0" IsVisible="{Binding IsDefault}" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </ScrollViewer>
             </StackPanel>
         </TabItem>
