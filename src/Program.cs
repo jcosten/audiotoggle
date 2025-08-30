@@ -1,6 +1,5 @@
 using System;
 using Avalonia;
-using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls;
 
 namespace AudioToggle

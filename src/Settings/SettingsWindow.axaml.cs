@@ -6,6 +6,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Avalonia.Interactivity;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Diagnostics.CodeAnalysis;
 
@@ -100,7 +101,13 @@ namespace AudioToggle
         private void SaveEnabledDevices(List<DeviceViewModel> devices)
         {
             var enabledDevices = devices.Where(d => d.IsEnabled).Select(d => d.Name).ToList();
-            var json = System.Text.Json.JsonSerializer.Serialize(enabledDevices, typeof(List<string>), AudioToggleJsonContext.Default);
+
+            // Use human-readable JSON formatting
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true
+            };
+            var json = System.Text.Json.JsonSerializer.Serialize(enabledDevices, options);
             PersistService.StoreString("enabledDevices", json);
         }
 

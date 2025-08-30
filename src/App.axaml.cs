@@ -115,8 +115,7 @@ namespace AudioToggle
         public override void OnFrameworkInitializationCompleted()
         {
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            {
-                // For a true system tray-only application, don't create a main window
+            {                // For a true system tray-only application, don't create a main window
                 // The tray icon and settings/notification windows will handle all UI
                 desktop.MainWindow = null;
             }

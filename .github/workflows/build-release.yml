@@ -1,0 +1,146 @@
+name: Build and Release Windows Executable
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Display .NET version
+      run: dotnet --version
+
+    - name: Clear NuGet cache
+      run: dotnet nuget locals all --clear
+
+    - name: Restore dependencies
+      run: dotnet restore src/AudioToggle.csproj
+
+    - name: Build project
+      run: dotnet build src/AudioToggle.csproj -c Release --no-restore
+
+    - name: Publish Windows executable
+      run: dotnet publish src/AudioToggle.csproj -c Release -r win-x64 /p:PublishSingleFile=true /p:SelfContained=true /p:EnableCompressionInSingleFile=true -o ./dist/windows
+
+    - name: Create release package
+      run: |
+        # Create a directory for the release package
+        New-Item -ItemType Directory -Path "./release-package" -Force
+        
+        # Copy files to release package
+        Copy-Item "./dist/windows/AudioToggle.exe" "./release-package/"
+        Copy-Item "./dist/windows/settings.json" "./release-package/"
+        
+        # Get version from csproj
+        $version = (Get-Content src/AudioToggle.csproj | Select-String -Pattern '<Version>(.*)</Version>' | ForEach-Object { $_.Matches.Groups[1].Value })
+        
+        # Create simple README for the package
+        "AudioToggle v$version`n`nWindows utility for switching audio devices with global hotkeys.`n`nInstallation:`n1. Extract all files to a folder`n2. Run AudioToggle.exe`n3. Access settings via the system tray icon`n`nFiles:`n- AudioToggle.exe: Main application`n- settings.json: Configuration file`n`nFor more information, visit: https://github.com/${{ github.repository }}" | Out-File -FilePath "./release-package/README.txt" -Encoding UTF8
+        
+        # Create zip file
+        Compress-Archive -Path "./release-package/*" -DestinationPath "./AudioToggle_Windows_v$version.zip" -Force
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: AudioToggle_Windows_${{ github.run_number }}
+        path: |
+          AudioToggle_Windows_v*.zip
+          dist/windows/AudioToggle.exe
+        retention-days: 30
+
+  check-version-and-release:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Extract version from csproj
+      id: get_version
+      run: |
+        VERSION=$(grep -oP '<Version>\K[^<]+' src/AudioToggle.csproj)
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Found version: $VERSION"
+
+    - name: Check for existing release
+      id: check_release
+      run: |
+        if gh release view "v${{ steps.get_version.outputs.version }}" --repo ${{ github.repository }} >/dev/null 2>&1; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+          echo "Release v${{ steps.get_version.outputs.version }} already exists"
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+          echo "Release v${{ steps.get_version.outputs.version }} does not exist"
+        fi
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Download build artifacts
+      if: steps.check_release.outputs.exists == 'false'
+      uses: actions/download-artifact@v4
+      with:
+        name: AudioToggle_Windows_${{ github.run_number }}
+        path: ./artifacts
+
+    - name: Create GitHub release
+      if: steps.check_release.outputs.exists == 'false'
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ steps.get_version.outputs.version }}
+        release_name: AudioToggle v${{ steps.get_version.outputs.version }}
+        body: |
+          ## AudioToggle v${{ steps.get_version.outputs.version }}
+
+          Windows utility for switching audio devices with global hotkeys.
+
+          ### Installation
+          1. Download `AudioToggle_Windows_v${{ steps.get_version.outputs.version }}.zip` from the assets below
+          2. Extract all files to a folder
+          3. Run AudioToggle.exe
+          4. Access settings via the system tray icon
+
+          ### Package Contents
+          - `AudioToggle.exe`: Main application
+          - `settings.json`: Configuration file
+          - `README.txt`: Installation instructions
+
+          ### Changes
+          - See commit history for detailed changes
+
+          ### System Requirements
+          - Windows 10 version 1809 or later
+          - ~70MB storage
+          - ~50MB RAM
+        draft: false
+        prerelease: ${{ contains(steps.get_version.outputs.version, 'alpha') || contains(steps.get_version.outputs.version, 'beta') || contains(steps.get_version.outputs.version, 'rc') }}
+
+    - name: Upload release assets
+      if: steps.check_release.outputs.exists == 'false'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./artifacts/AudioToggle_Windows_v${{ steps.get_version.outputs.version }}.zip
+        asset_name: AudioToggle_Windows_v${{ steps.get_version.outputs.version }}.zip
+        asset_content_type: application/zip

@@ -1,6 +1,15 @@
 # AudioToggle - the tool windows should of had as a default feature
 
-AudioToggle is a Windows utility that allows you to quickly switch between audio devices using a customizable global keyboard hotkey.
+AudioToggle is a W### Release Process
+1. **Update Version**: Run `.\update-version.ps1 -NewVersion "1.1.0"` or manually edit `src/AudioToggle.csproj`
+2. **Test Build**: Run `dotnet build src/AudioToggle.csproj` to verify
+3. **Commit & Push**: `git add . && git commit -m "Bump version to 1.1.0" && git push origin main`
+4. **Automatic Release**: GitHub Actions will automatically create a release with the new version
+
+#### Manual Release (if needed)
+- Go to GitHub → Releases → "Create a new release"
+- Tag: `v1.0.0` (must match csproj version)
+- Upload: `AudioToggle_Windows.exe` from CI artifactss utility that allows you to quickly switch between audio devices using a customizable global keyboard hotkey.
 
 ## Features
 
@@ -18,18 +27,8 @@ AudioToggle is a Windows utility that allows you to quickly switch between audio
 - **Storage**: ~200MB for installation
 
 ## Installation
-
-### Option 1: Run as Regular Application
-1. Build the application:
-   ```bash
-   dotnet build -c Release
-   ```
-2. Run the executable:
-   ```bash
-   dotnet run
-   ```
-
-### Option 2: Install as Windows Service (Recommended)
+Unzip release anywhere you keep your apps/utilities. Run the exe. 
+In the general settings it will register/un-register itself from that setting.
 
 #### Prerequisites
 - Windows 10/11
@@ -57,6 +56,53 @@ Settings are stored in `settings.json` next to the executable:
   "defaultPlayback": "CurrentDevice"
 }
 ```
+
+## Development
+
+### Building from Source
+
+#### Prerequisites
+- .NET 9.0 SDK
+- Windows 10/11
+
+#### Build Commands
+```bash
+# Restore dependencies
+dotnet restore src/AudioToggle.csproj
+
+# Build in debug mode
+dotnet build src/AudioToggle.csproj
+
+# Build release
+dotnet build src/AudioToggle.csproj -c Release
+
+# Create Windows executable
+dotnet publish src/AudioToggle.csproj -c Release -r win-x64 /p:PublishSingleFile=true /p:SelfContained=true /p:EnableCompressionInSingleFile=true -o ./dist/windows
+```
+
+#### Local Build Script
+Run `build-release.bat` to build the Windows release locally.
+
+### CI/CD Pipeline
+
+This project uses GitHub Actions for automated building and releasing.
+
+#### Workflow Triggers
+- **Push to main**: Builds and creates artifacts
+- **Pull Request**: Validates build
+- **Release published**: Creates release assets
+
+#### Build Artifacts
+- `AudioToggle_Windows_v{version}.zip` - Complete Windows package containing:
+  - `AudioToggle.exe` - Windows executable
+  - `settings.json` - Default settings file
+  - `README.txt` - Installation instructions
+
+#### Release Process
+1. Update version in `src/AudioToggle.csproj`
+2. Push changes to main branch
+3. GitHub Actions automatically creates release with ZIP package
+4. Download `AudioToggle_Windows_v{version}.zip` from release assets
 
 ## Usage
 

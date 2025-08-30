@@ -18,7 +18,13 @@ namespace AudioToggle
                 ? JsonSerializer.Deserialize(File.ReadAllText(filePath), typeof(Dictionary<string, string>), AudioToggleJsonContext.Default) as Dictionary<string, string>
                 : new Dictionary<string, string>();
             dict[key] = value;
-            File.WriteAllText(filePath, JsonSerializer.Serialize(dict, typeof(Dictionary<string, string>), AudioToggleJsonContext.Default));
+
+            // Use human-readable JSON formatting
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true
+            };
+            File.WriteAllText(filePath, JsonSerializer.Serialize(dict, options));
         }
 
         // Retrieves a string value by key from the JSON file

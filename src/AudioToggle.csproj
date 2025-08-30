@@ -1,9 +1,20 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
+    <OutputType>Exe</OutputType>
     <TargetFramework>net9.0-windows</TargetFramework>
     <AvaloniaUseCompiledBindingsByDefault>True</AvaloniaUseCompiledBindingsByDefault>
+    
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <InformationalVersion>1.0.0</InformationalVersion>
+    <Company></Company>
+    <Product>AudioToggle</Product>
+    <Description>Windows utility for switching audio devices with global hotkey</Description>
+    <Copyright></Copyright>
+    <AssemblyTitle>AudioToggle</AssemblyTitle>
+
     <!-- Enable COM interop for AudioSwitcher.AudioApi.CoreAudio -->
     <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
@@ -45,3 +56,4 @@
 
 
 </Project>
+
