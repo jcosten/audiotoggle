@@ -1,29 +1,33 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace AudioToggle
 {
     public static class PersistService
     {
         // Stores a string value under a key in a JSON file next to the binaries
+        [UnconditionalSuppressMessage("Trim", "IL2026:Using member 'System.Text.Json.JsonSerializer.Deserialize<TValue>(String, JsonSerializerOptions)' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code", Justification = "Types are known at compile time and preserved by JsonSerializable attributes")]
         public static void StoreString(string key, string value)
         {
             string filePath = GetJsonFilePath();
             var dict = File.Exists(filePath)
-                ? JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(filePath))
+                ? JsonSerializer.Deserialize(File.ReadAllText(filePath), typeof(Dictionary<string, string>), AudioToggleJsonContext.Default) as Dictionary<string, string>
                 : new Dictionary<string, string>();
             dict[key] = value;
-            File.WriteAllText(filePath, JsonSerializer.Serialize(dict));
+            File.WriteAllText(filePath, JsonSerializer.Serialize(dict, typeof(Dictionary<string, string>), AudioToggleJsonContext.Default));
         }
 
         // Retrieves a string value by key from the JSON file
+        [UnconditionalSuppressMessage("Trim", "IL2026:Using member 'System.Text.Json.JsonSerializer.Deserialize<TValue>(String, JsonSerializerOptions)' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code", Justification = "Types are known at compile time and preserved by JsonSerializable attributes")]
         public static string GetString(string key)
         {
             string filePath = GetJsonFilePath();
             if (!File.Exists(filePath)) return null;
-            var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(filePath));
+            var dict = JsonSerializer.Deserialize(File.ReadAllText(filePath), typeof(Dictionary<string, string>), AudioToggleJsonContext.Default) as Dictionary<string, string>;
             return dict != null && dict.ContainsKey(key) ? dict[key] : null;
         }
 

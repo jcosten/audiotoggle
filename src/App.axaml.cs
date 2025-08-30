@@ -55,7 +55,7 @@ namespace AudioToggle
                 {
                     System.Diagnostics.Debug.WriteLine($"Failed to parse hotkey: {savedHotkey}");
                     // Fallback to default
-                    var hotKey = new HotKey(Key.F5, ModifierKeys.Control | ModifierKeys.Alt);
+                    var hotKey = new HotKey(Key.F1, ModifierKeys.Control | ModifierKeys.Alt);
                     hotKeyService.RegisterHotKey(hotKey);
                     hotKeyService.RegisterCallback(OnHotKeyPressed);
                 }
@@ -114,6 +114,13 @@ namespace AudioToggle
 
         public override void OnFrameworkInitializationCompleted()
         {
+            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                // For a true system tray-only application, don't create a main window
+                // The tray icon and settings/notification windows will handle all UI
+                desktop.MainWindow = null;
+            }
+
             base.OnFrameworkInitializationCompleted();
         }
 

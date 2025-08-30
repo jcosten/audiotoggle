@@ -6,6 +6,8 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Avalonia.Interactivity;
+using System.Text.Json.Serialization;
+using System.Diagnostics.CodeAnalysis;
 
 namespace AudioToggle
 {
@@ -80,12 +82,13 @@ namespace AudioToggle
             listBox.ItemsSource = deviceViewModels;
         }
 
+        [UnconditionalSuppressMessage("Trim", "IL2026:Using member 'System.Text.Json.JsonSerializer.Deserialize<TValue>(String, JsonSerializerOptions)' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code", Justification = "Types are known at compile time and preserved by JsonSerializable attributes")]
         private List<string> GetEnabledDevices()
         {
             var enabledDevicesJson = PersistService.GetString("enabledDevices", "[]");
             try
             {
-                return System.Text.Json.JsonSerializer.Deserialize<List<string>>(enabledDevicesJson) ?? new List<string>();
+                return System.Text.Json.JsonSerializer.Deserialize(enabledDevicesJson, typeof(List<string>), AudioToggleJsonContext.Default) as List<string> ?? new List<string>();
             }
             catch
             {
@@ -93,10 +96,11 @@ namespace AudioToggle
             }
         }
 
+        [UnconditionalSuppressMessage("Trim", "IL2026:Using member 'System.Text.Json.JsonSerializer.Serialize<TValue>(TValue, JsonSerializerOptions)' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code", Justification = "Types are known at compile time and preserved by JsonSerializable attributes")]
         private void SaveEnabledDevices(List<DeviceViewModel> devices)
         {
             var enabledDevices = devices.Where(d => d.IsEnabled).Select(d => d.Name).ToList();
-            var json = System.Text.Json.JsonSerializer.Serialize(enabledDevices);
+            var json = System.Text.Json.JsonSerializer.Serialize(enabledDevices, typeof(List<string>), AudioToggleJsonContext.Default);
             PersistService.StoreString("enabledDevices", json);
         }
 
@@ -122,7 +126,7 @@ namespace AudioToggle
             var hotkeyTextBox = this.FindControl<TextBox>("HotkeyTextBox");
 
             // Load saved hotkey or use default
-            var savedHotkey = PersistService.GetString("hotkey", "Ctrl+Alt+F5");
+            var savedHotkey = PersistService.GetString("hotkey", "Ctrl+Alt+F1");
             hotkeyTextBox.Text = savedHotkey;
 
             // Handle key input for hotkey capture
@@ -348,6 +352,23 @@ namespace AudioToggle
         {
             var defaultDevice = this.audioServiceAdapter.GetDefaultPlaybackDevice();
             return defaultDevice?.Name;
+        }
+
+        private void GitHubLinkButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var psi = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "https://github.com/jcosten/audiotoggle/",
+                    UseShellExecute = true
+                };
+                System.Diagnostics.Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to open GitHub URL: {ex.Message}");
+            }
         }
 
         public void OnCloseClicked(object sender, EventArgs args)

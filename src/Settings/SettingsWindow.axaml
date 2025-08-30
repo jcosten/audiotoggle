@@ -4,7 +4,8 @@
         x:Class="AudioToggle.SettingsWindow"
         Title="Audio Toggle - Settings"
         Width="500"
-        Height="400">
+        Height="400"
+        Icon="avares://AudioToggle/assets/tray_icon.png">
         <TabControl>
         <TabItem Header="Audio Devices">
             <StackPanel>
@@ -57,7 +58,8 @@
                 
                 <TextBlock Text="About:" Margin="10" FontWeight="Bold" />
                 <TextBlock Text="AudioToggle v1.0" Margin="15,5"/>
-                <TextBlock Text="Quick audio device switching utility" Margin="15,5" Foreground="Gray"/>
+                <TextBlock Text="Quick audio toggle utility by Jeremy Costen" Margin="15,5" Foreground="Gray"/>
+                <Button x:Name="GitHubLinkButton" Content="https://github.com/jcosten/audiotoggle/" Margin="15,5" Background="Transparent" BorderThickness="0" Foreground="LightBlue" Cursor="Hand" Click="GitHubLinkButton_Click"/>
             </StackPanel>
         </TabItem>
     </TabControl>

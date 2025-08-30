@@ -1,12 +1,33 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType>WinExe</OutputType>
     <TargetFramework>net9.0-windows</TargetFramework>
     <AvaloniaUseCompiledBindingsByDefault>True</AvaloniaUseCompiledBindingsByDefault>
+    <!-- Enable COM interop for AudioSwitcher.AudioApi.CoreAudio -->
+    <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <!-- Preserve COM-related assemblies during trimming -->
+    <TrimmerDefaultAction>link</TrimmerDefaultAction>
+    <SuppressTrimAnalysisWarnings>false</SuppressTrimAnalysisWarnings>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <!-- Include SkiaSharp native assets -->
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <!-- Exclude PDB files from Release builds -->
+    <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
+    <!-- Suppress NU1701 warnings for AudioSwitcher packages -->
+    <NoWarn>NU1701</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <AvaloniaResource Include="assets\**" />
+  </ItemGroup>
+
+  <!-- Preserve COM-related assemblies during trimming -->
+  <ItemGroup>
+    <TrimmerRootAssembly Include="AudioSwitcher.AudioApi.CoreAudio" />
+    <TrimmerRootAssembly Include="System.Runtime.InteropServices" />
+    <TrimmerRootAssembly Include="System.Runtime.InteropServices.ComTypes" />
+    <TrimmerRootAssembly Include="System.Runtime.InteropServices.RuntimeInformation" />
   </ItemGroup>
 
   <ItemGroup>
@@ -19,6 +40,7 @@
     <PackageReference Include="GlobalHotKeyCore" Version="1.2.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.0" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Win32" Version="2.88.9" />
   </ItemGroup>
 
 

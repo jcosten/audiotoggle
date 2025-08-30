@@ -36,25 +36,6 @@ AudioToggle is a Windows utility that allows you to quickly switch between audio
 - Administrator privileges
 - .NET 9.0 Runtime
 
-#### Installation Steps
-
-1. **Build the Release Version**:
-   ```bash
-   dotnet publish -c Release
-   ```
-
-2. **Run the Installation Script**:
-   - **Method A**: Double-click `install-service.bat` and select "Run as administrator"
-   - **Method B**: Open PowerShell as Administrator and run:
-     ```powershell
-     .\install-service.ps1
-     ```
-
-3. **Verify Installation**:
-   - Open Services (services.msc)
-   - Look for "AudioToggle - Audio Device Switcher"
-   - Status should be "Running"
-
 
 ### First Time Setup
 1. **Open Settings**: Right-click the system tray icon → Settings
@@ -103,7 +84,6 @@ Examples:
 ### Hotkey Not Working
 - Check if another application is using the same hotkey
 - Try a different key combination
-- Restart the service: `net stop AudioToggleService && net start AudioToggleService`
 
 
 ### Device Not Switching
