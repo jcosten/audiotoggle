@@ -37,7 +37,6 @@ jobs:
         name: AudioToggle_Windows_${{ github.run_number }}
         path: |
           AudioToggle_Windows_v*.zip
-          dist/windows/AudioToggle.exe
         retention-days: 30
 
   check-version-and-release:
