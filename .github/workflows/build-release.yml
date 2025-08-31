@@ -62,6 +62,38 @@ jobs:
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Found version: $VERSION"
 
+    - name: Extract release notes from CHANGELOG.md
+      id: get_changelog
+      run: |
+        if [ -f "CHANGELOG.md" ]; then
+          # Extract the current version's release notes
+          VERSION_PATTERN="## \\[${VERSION//./\\.}\\]"
+          NEXT_VERSION_PATTERN="## \\[[0-9]+\\.[0-9]+\\.[0-9]+\\]"
+          
+          # Use awk to extract content between version headers
+          RELEASE_NOTES=$(awk "
+            /$VERSION_PATTERN/ { in_section=1; next }
+            /$NEXT_VERSION_PATTERN/ && in_section { exit }
+            /^---$/ && in_section { exit }
+            in_section { print }
+          " CHANGELOG.md | sed '/^$/d' | sed 's/^###/#/' | sed 's/^####/##/' | sed 's/^#####/###/' | sed 's/^######/####/')
+          
+          if [ -n "$RELEASE_NOTES" ]; then
+            # Escape newlines and quotes for GitHub Actions output
+            RELEASE_NOTES=$(echo "$RELEASE_NOTES" | awk '{printf "%s\\n", $0}' | sed 's/"/\\"/g')
+            echo "release_notes<<EOF" >> $GITHUB_OUTPUT
+            echo "$RELEASE_NOTES" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+            echo "Found release notes for v$VERSION"
+          else
+            echo "release_notes=No release notes found for v$VERSION" >> $GITHUB_OUTPUT
+            echo "No release notes found for v$VERSION"
+          fi
+        else
+          echo "release_notes=CHANGELOG.md not found" >> $GITHUB_OUTPUT
+          echo "CHANGELOG.md not found"
+        fi
+
     - name: Check for existing release
       id: check_release
       run: |
@@ -95,26 +127,9 @@ jobs:
         release_name: AudioToggle v${{ steps.get_version.outputs.version }}
         body: |
           ## AudioToggle v${{ steps.get_version.outputs.version }}
+          ${{ steps.get_changelog.outputs.release_notes }}
 
-          Windows utility for switching audio devices with global hotkeys.
 
-          ### Installation
-          1. Download `AudioToggle_Windows_v${{ steps.get_version.outputs.version }}.zip` from the assets below
-          2. Extract the ZIP file
-          3. Open the AudioToggle folder
-          4. Run AudioToggle.exe
-          5. Access settings via the system tray icon
-
-          ### Package Contents
-          - `AudioToggle/AudioToggle.exe`: Main application
-
-          ### Changes
-          - See commit history for detailed changes
-
-          ### System Requirements
-          - Windows 10 version 1809 or later
-          - ~70MB storage
-          - ~50MB RAM
         draft: false
         prerelease: ${{ contains(steps.get_version.outputs.version, 'alpha') || contains(steps.get_version.outputs.version, 'beta') || contains(steps.get_version.outputs.version, 'rc') }}
 
