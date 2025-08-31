@@ -3,6 +3,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net9.0-windows</TargetFramework>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <AvaloniaUseCompiledBindingsByDefault>True</AvaloniaUseCompiledBindingsByDefault>
     <Version>1.0.1</Version>
     <AssemblyVersion>1.0.1</AssemblyVersion>
@@ -10,6 +11,7 @@
     <Product>AudioToggle</Product>
     <Description>Windows utility for switching audio devices with global hotkey</Description>
     <AssemblyTitle>AudioToggle</AssemblyTitle>
+    <ApplicationIcon>assets\Logo.ico</ApplicationIcon>
     <!-- Disable debug output in release builds -->
     <DebugSymbols Condition="'$(Configuration)' == 'Release'">false</DebugSymbols>
     <DebugType Condition="'$(Configuration)' == 'Release'">None</DebugType>

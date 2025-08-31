@@ -7,7 +7,7 @@
   </Application.Styles>
   <TrayIcon.Icons>
     <TrayIcons>
-      <TrayIcon Icon="/assets/tray_icon.png"
+      <TrayIcon Icon="/assets/tray_icon.ico"
                 ToolTipText="Audio Toggle">
         <TrayIcon.Menu>
           <NativeMenu>

@@ -5,7 +5,7 @@
         Title="Audio Toggle - Settings"
         Width="500"
         Height="400"
-        Icon="avares://AudioToggle/assets/tray_icon.png">
+        Icon="avares://AudioToggle/assets/tray_icon.ico">
         <TabControl>
         <TabItem Header="Audio Devices">
             <StackPanel>

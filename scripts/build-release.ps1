@@ -3,7 +3,6 @@ param(
 )
 
 Write-Host "Building AudioToggle Windows Release..." -ForegroundColor Green
-Write-Host ""
 
 # Function to handle errors
 function Exit-WithError {
@@ -21,75 +20,24 @@ function Write-WarningMessage {
     Write-Host "WARNING: $Message" -ForegroundColor Yellow
 }
 
-Write-Host "Checking for running AudioToggle processes..." -ForegroundColor Cyan
-$runningProcesses = Get-Process -Name "AudioToggle" -ErrorAction SilentlyContinue
-if ($runningProcesses) {
-    Write-Host "Found running AudioToggle process. Terminating..." -ForegroundColor Yellow
-    $runningProcesses | Stop-Process -Force
-    Start-Sleep -Seconds 2
-}
-
-Write-Host "Clearing old build artifacts..." -ForegroundColor Cyan
-$pathsToClean = @("dist", "release-package")
-foreach ($path in $pathsToClean) {
-    if (Test-Path $path) {
-        Remove-Item $path -Recurse -Force
+# Clean dist folder
+Write-Host "Cleaning dist folder..." -ForegroundColor Cyan
+if (Test-Path "dist") {
+    try {
+        Remove-Item "dist" -Recurse -Force
+    } catch {
+        Write-WarningMessage "Could not clean dist folder completely, some files may be in use"
+        # Try to remove individual files
+        Get-ChildItem "dist" -Recurse | Remove-Item -Force -ErrorAction SilentlyContinue
     }
 }
 
-# Clean old ZIP files
+# Clean old ZIP files in root (for backward compatibility)
 Get-ChildItem "AudioToggle_Windows_v*.zip" -ErrorAction SilentlyContinue | Remove-Item -Force
-
-Write-Host ""
-Write-Host "Restoring dependencies..." -ForegroundColor Cyan
-$restoreResult = dotnet restore src/AudioToggle.csproj
-if ($LASTEXITCODE -ne 0) {
-    Exit-WithError "Failed to restore dependencies"
-}
-
-Write-Host ""
-Write-Host "Building project..." -ForegroundColor Cyan
-$buildResult = dotnet build src/AudioToggle.csproj -c Release --no-restore
-if ($LASTEXITCODE -ne 0) {
-    Exit-WithError "Failed to build project"
-}
-
-Write-Host ""
-Write-Host "Publishing Windows release..." -ForegroundColor Cyan
-$publishResult = dotnet publish src/AudioToggle.csproj -c Release -r win-x64 -o ./dist/windows --no-build
-if ($LASTEXITCODE -ne 0) {
-    Write-WarningMessage "Publish failed, using build output instead..."
-    if (-not (Test-Path "dist\windows")) {
-        New-Item -ItemType Directory -Path "dist\windows" -Force | Out-Null
-    }
-    Copy-Item "src\bin\Release\net9.0-windows\*" "dist\windows\" -Recurse -Force
-}
-
-Write-Host ""
-Write-Host "Creating release package with AudioToggle folder..." -ForegroundColor Cyan
-
-# Create package directory structure
-$packageDir = "release-package"
-$audioToggleDir = Join-Path $packageDir "AudioToggle"
-
-if (-not (Test-Path $packageDir)) {
-    New-Item -ItemType Directory -Path $packageDir -Force | Out-Null
-}
-if (-not (Test-Path $audioToggleDir)) {
-    New-Item -ItemType Directory -Path $audioToggleDir -Force | Out-Null
-}
-
-# Copy files into AudioToggle subfolder
-Write-Host "Copying application files..." -ForegroundColor Cyan
-try {
-    Copy-Item "dist\windows\*" $audioToggleDir -Recurse -Force
-} catch {
-    Exit-WithError "Failed to copy application files"
-}
 
 # Extract version from csproj
 Write-Host "Extracting version from project file..." -ForegroundColor Cyan
-$version = "1.0.0" # Default version
+$version = "1.0.0"
 try {
     $csprojPath = "src\AudioToggle.csproj"
     if (Test-Path $csprojPath) {
@@ -105,52 +53,30 @@ try {
 
 Write-Host "Using version: $version" -ForegroundColor Green
 
-# Create README with version
-$readmePath = Join-Path $packageDir "README.txt"
-$readmeContent = @"
-AudioToggle v$version
-
-Installation:
-1. Extract the ZIP file
-2. Open the AudioToggle folder
-3. Run AudioToggle.exe
-4. Access settings via the system tray icon
-
-Package Contents:
-- AudioToggle/AudioToggle.exe: Main application
-- AudioToggle/*.dll: Required libraries
-- AudioToggle/*.json: Configuration files
-"@
-
-$readmeContent | Out-File -FilePath $readmePath -Encoding UTF8
-
-# Create ZIP with AudioToggle folder structure
-Write-Host "Creating ZIP archive..." -ForegroundColor Cyan
-$zipPath = "AudioToggle_Windows_v$version.zip"
-try {
-    Compress-Archive -Path "$packageDir\*" -DestinationPath $zipPath -Force
-} catch {
-    Exit-WithError "Failed to create ZIP archive"
+# Restore and build
+Write-Host "Restoring dependencies..." -ForegroundColor Cyan
+dotnet restore src/AudioToggle.csproj
+if ($LASTEXITCODE -ne 0) {
+    Exit-WithError "Failed to restore dependencies"
 }
 
-Write-Host ""
+Write-Host "Building and publishing..." -ForegroundColor Cyan
+dotnet publish src/AudioToggle.csproj -c Release -r win-x64 -o ./dist/windows --no-restore
+if ($LASTEXITCODE -ne 0) {
+    Exit-WithError "Failed to build and publish"
+}
+
+# Create ZIP from dist folder
+Write-Host "Creating ZIP archive..." -ForegroundColor Cyan
+$zipPath = "dist\AudioToggle_Windows_v$version.zip"
+Compress-Archive -Path "dist\windows\*" -DestinationPath $zipPath -Force
+
 Write-Host "Build completed successfully!" -ForegroundColor Green
 Write-Host "Release package: $zipPath" -ForegroundColor Green
-Write-Host ""
 
-Write-Host "Package contents:" -ForegroundColor Cyan
-Get-ChildItem $packageDir | Format-Table -AutoSize
-
-Write-Host ""
-Write-Host "AudioToggle folder contents:" -ForegroundColor Cyan
-Get-ChildItem $audioToggleDir | Format-Table -AutoSize
-
-Write-Host ""
-Write-Host "ZIP file size:" -ForegroundColor Cyan
 $zipFile = Get-Item $zipPath
-Write-Host ("{0:N2} MB" -f ($zipFile.Length / 1MB)) -ForegroundColor Green
+Write-Host ("ZIP file size: {0:N2} MB" -f ($zipFile.Length / 1MB)) -ForegroundColor Green
 
-Write-Host ""
 if (-not $NoPause) {
     Read-Host "Press Enter to exit"
 }
