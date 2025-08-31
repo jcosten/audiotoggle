@@ -15,66 +15,31 @@ namespace AudioToggle
 
     public partial class SettingsWindow : Window
     {
-        private AudioServiceAdapter audioServiceAdapter;
-        private static readonly Lazy<IHotKeyService> hotKeyServiceLazy = new Lazy<IHotKeyService>(() => new HotKeyServiceAdapter());
-        private static IHotKeyService hotKeyService => hotKeyServiceLazy.Value;
+        private readonly AudioServiceAdapter audioServiceAdapter;
+        private static IHotKeyService hotKeyService = new HotKeyServiceAdapter();
         private List<DeviceViewModel> deviceViewModels;
-        private static WeakReference<SettingsWindow> _instanceRef = new WeakReference<SettingsWindow>(null);
+        private static SettingsWindow _instance;
 
         public SettingsWindow()
         {
-            _instanceRef.SetTarget(this);
+            _instance = this;
+            this.audioServiceAdapter = new AudioServiceAdapter();
             AvaloniaXamlLoader.Load(this);
 
-            // Lazy initialize services only when window is shown
-            InitializeOnFirstShow();
+            InitializeAudioDevicesTab();
+            InitializeHotkeysTab();
+            InitializeGeneralTab();
 
             this.Closing += (sender, e) => {
                 e.Cancel = true;
                 this.Hide();
-                // Clean up to reduce memory when hidden
-                CleanupWhenHidden();
             };
-        }
-
-        private void InitializeOnFirstShow()
-        {
-            this.Opened += (sender, e) =>
-            {
-                if (audioServiceAdapter == null)
-                {
-                    audioServiceAdapter = new AudioServiceAdapter();
-                    InitializeAudioDevicesTab();
-                    InitializeHotkeysTab();
-                    InitializeGeneralTab();
-                }
-            };
-        }
-
-        private void CleanupWhenHidden()
-        {
-            // Unsubscribe from events to prevent memory leaks
-            if (deviceViewModels != null)
-            {
-                foreach (var device in deviceViewModels)
-                {
-                    device.EnabledChanged -= OnDeviceEnabledChanged;
-                }
-            }
-        }
-
-        private void OnDeviceEnabledChanged(object sender, EventArgs e)
-        {
-            SaveEnabledDevices(deviceViewModels);
         }
 
         // Static method to update the default device from external classes
         public static void UpdateDefaultDevice(string newDefaultDeviceName)
         {
-            if (_instanceRef.TryGetTarget(out var instance))
-            {
-                instance.RefreshDefaultDevice(newDefaultDeviceName);
-            }
+            _instance?.RefreshDefaultDevice(newDefaultDeviceName);
         }
 
         private void RefreshDefaultDevice(string newDefaultDeviceName)
@@ -94,22 +59,12 @@ namespace AudioToggle
             var listBox = this.FindControl<ItemsControl>("AudioDevicesListBox");
 
             // Invalidate cache to ensure we get fresh device information
-            audioServiceAdapter.InvalidateCache();
+            this.audioServiceAdapter.InvalidateCache();
             
-            var deviceNames = audioServiceAdapter.GetAudioDeviceNames();
+            var deviceNames = this.audioServiceAdapter.GetAudioDeviceNames();
             var defaultDevice = GetDefaultDeviceName();
             var enabledDevices = GetEnabledDevices();
-            
-            // Clear old subscriptions to prevent memory leaks
-            if (deviceViewModels != null)
-            {
-                foreach (var device in deviceViewModels)
-                {
-                    device.EnabledChanged -= OnDeviceEnabledChanged;
-                }
-            }
-            
-            deviceViewModels = new List<DeviceViewModel>(deviceNames.Count);
+            deviceViewModels = new List<DeviceViewModel>();
             
             foreach (var name in deviceNames)
             {
@@ -121,7 +76,7 @@ namespace AudioToggle
                 };
                 
                 // Subscribe to changes in the IsEnabled property
-                deviceViewModel.EnabledChanged += OnDeviceEnabledChanged;
+                deviceViewModel.EnabledChanged += (s, e) => SaveEnabledDevices(deviceViewModels);
                 deviceViewModels.Add(deviceViewModel);
             }
             
@@ -402,7 +357,7 @@ namespace AudioToggle
 
         private string GetDefaultDeviceName()
         {
-            var defaultDevice = audioServiceAdapter.GetDefaultPlaybackDevice();
+            var defaultDevice = this.audioServiceAdapter.GetDefaultPlaybackDevice();
             return defaultDevice?.Name;
         }
 

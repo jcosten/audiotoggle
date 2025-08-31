@@ -23,8 +23,8 @@ AudioToggle is a W### Release Process
 
 - **OS**: Windows 10 version 1809 or later
 - **Framework**: .NET 9.0
-- **Memory**: ~150MB RAM (improvements to this coming soon)
-- **Storage**: ~70MB for installation
+- **Memory**: ~50MB RAM
+- **Storage**: ~200MB for installation
 
 ## Installation
 Unzip release anywhere you keep your apps/utilities. Run the exe. 
@@ -32,6 +32,7 @@ In the general settings it will register/un-register itself from that setting.
 
 #### Prerequisites
 - Windows 10/11
+- Administrator privileges
 - .NET 9.0 Runtime
 
 

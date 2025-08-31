@@ -19,7 +19,6 @@ namespace AudioToggle
 
         private static Window _window;
         private static Task _autoHideTask;
-        private static TextBlock _deviceTextBlock; // Cache reference to avoid searching
 
         public static void ShowDeviceNotification(string deviceName)
         {
@@ -32,19 +31,19 @@ namespace AudioToggle
             Dispatcher.UIThread.InvokeAsync(() =>
             {
                 // Cancel any existing auto-hide
-                _autoHideTask?.ContinueWith(t => { }, TaskContinuationOptions.OnlyOnCanceled);
+                if (_autoHideTask != null && !_autoHideTask.IsCompleted)
+                {
+                    // Task will be cancelled naturally
+                }
 
-                // Create window if needed (lazy initialization)
+                // Create window if needed
                 if (_window == null)
                 {
                     CreateWindow();
                 }
 
-                // Update content efficiently
-                if (_deviceTextBlock != null)
-                {
-                    _deviceTextBlock.Text = deviceName;
-                }
+                // Update content
+                UpdateContent(deviceName);
 
                 // Show window
                 if (!_window.IsVisible)
@@ -80,7 +79,7 @@ namespace AudioToggle
             int y = screenHeight - (80 + 90); // 80 + 90 margin
             _window.Position = new PixelPoint(Math.Max(0, x), Math.Max(0, y));
 
-            // Create content with minimal allocations
+            // Create content
             var border = new Border
             {
                 Background = new SolidColorBrush(Color.FromRgb(45, 45, 48)),
@@ -91,18 +90,13 @@ namespace AudioToggle
                 Cursor = new Cursor(StandardCursorType.Hand)
             };
 
-            // Optimize hover effects with pre-created brushes
-            var normalBackground = new SolidColorBrush(Color.FromRgb(45, 45, 48));
-            var normalBorder = new SolidColorBrush(Color.FromRgb(63, 63, 70));
-            var hoverBackground = new SolidColorBrush(Color.FromRgb(55, 55, 58));
-            var hoverBorder = new SolidColorBrush(Color.FromRgb(100, 122, 204));
-
+            // Add hover effect
             border.PointerEntered += (s, e) =>
             {
                 if (s is Border b)
                 {
-                    b.Background = hoverBackground;
-                    b.BorderBrush = hoverBorder;
+                    b.Background = new SolidColorBrush(Color.FromRgb(55, 55, 58));
+                    b.BorderBrush = new SolidColorBrush(Color.FromRgb(100, 122, 204));
                 }
             };
 
@@ -110,8 +104,8 @@ namespace AudioToggle
             {
                 if (s is Border b)
                 {
-                    b.Background = normalBackground;
-                    b.BorderBrush = normalBorder;
+                    b.Background = new SolidColorBrush(Color.FromRgb(45, 45, 48));
+                    b.BorderBrush = new SolidColorBrush(Color.FromRgb(63, 63, 70));
                 }
             };
 
@@ -126,14 +120,12 @@ namespace AudioToggle
                 Foreground = new SolidColorBrush(Color.FromRgb(0, 122, 204)),
                 Margin = new Thickness(0, 0, 0, 8)
             });
-            
-            _deviceTextBlock = new TextBlock
+            stackPanel.Children.Add(new TextBlock
             {
                 Text = "",
                 Foreground = new SolidColorBrush(Colors.White),
                 FontSize = 12
-            };
-            stackPanel.Children.Add(_deviceTextBlock);
+            });
 
             border.Child = stackPanel;
             _window.Content = border;
@@ -141,7 +133,13 @@ namespace AudioToggle
 
         private static void UpdateContent(string deviceName)
         {
-            // This method is no longer needed as we update directly
+            if (_window?.Content is Border border && border.Child is StackPanel stackPanel)
+            {
+                if (stackPanel.Children.Count >= 2 && stackPanel.Children[1] is TextBlock deviceTextBlock)
+                {
+                    deviceTextBlock.Text = deviceName;
+                }
+            }
         }
 
         private static void StartAutoHideTimer()
