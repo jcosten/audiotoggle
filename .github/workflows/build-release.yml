@@ -28,7 +28,7 @@ jobs:
       run: dotnet nuget locals all --clear
 
     - name: Build and package release
-      run: .\build-release.ps1 -NoPause
+      run: .\scripts\build-release.ps1 -NoPause
       shell: pwsh
 
     - name: Upload build artifacts
