@@ -21,10 +21,6 @@
     <AvaloniaResource Include="assets\**" />
   </ItemGroup>
 
-  <!-- Include assets as content files for publish -->
-  <ItemGroup>
-    <Content Include="assets\**" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AudioSwitcher.AudioApi" Version="4.0.0-alpha5" />
     <PackageReference Include="AudioSwitcher.AudioApi.CoreAudio" Version="4.0.0-alpha5" />

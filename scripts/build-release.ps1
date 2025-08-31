@@ -61,7 +61,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "Building and publishing..." -ForegroundColor Cyan
-dotnet publish src/AudioToggle.csproj -c Release -r win-x64 -o ./dist/windows --no-restore
+dotnet publish src/AudioToggle.csproj -c Release -r win-x64 /p:PublishSingleFile=true /p:SelfContained=true /p:EnableCompressionInSingleFile=true -o ./dist/windows --no-restore
 if ($LASTEXITCODE -ne 0) {
     Exit-WithError "Failed to build and publish"
 }
