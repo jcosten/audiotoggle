@@ -14,10 +14,38 @@ function Exit-WithError {
     exit 1
 }
 
-# Function to handle warnings
-function Write-WarningMessage {
-    param([string]$Message)
-    Write-Host "WARNING: $Message" -ForegroundColor Yellow
+# Function to extract release notes from CHANGELOG.md
+function Get-ReleaseNotes {
+    param([string]$Version)
+    
+    $changelogPath = "CHANGELOG.md"
+    if (!(Test-Path $changelogPath)) {
+        Write-WarningMessage "CHANGELOG.md not found, skipping release notes"
+        return $null
+    }
+    
+    try {
+        $content = Get-Content $changelogPath -Raw
+        
+        # Find the version section
+        $versionPattern = "## \[$Version\]"
+        $nextVersionPattern = "## \[\d+\.\d+\.\d+\]"
+        
+        $versionMatch = [regex]::Match($content, "$versionPattern.*?(?=$nextVersionPattern|---|\z)", [System.Text.RegularExpressions.RegexOptions]::Singleline)
+        
+        if ($versionMatch.Success) {
+            $releaseNotes = $versionMatch.Value.Trim()
+            # Remove the version header line
+            $releaseNotes = $releaseNotes -replace "^## \[$Version\].*?\n", ""
+            return $releaseNotes.Trim()
+        } else {
+            Write-WarningMessage "Could not find release notes for version $Version in CHANGELOG.md"
+            return $null
+        }
+    } catch {
+        Write-WarningMessage "Error reading CHANGELOG.md: $($_.Exception.Message)"
+        return $null
+    }
 }
 
 # Clean dist folder
@@ -53,6 +81,19 @@ try {
 
 Write-Host "Using version: $version" -ForegroundColor Green
 
+# Extract release notes from CHANGELOG.md
+Write-Host "Extracting release notes from CHANGELOG.md..." -ForegroundColor Cyan
+$releaseNotes = Get-ReleaseNotes -Version $version
+if ($releaseNotes) {
+    Write-Host "Release Notes for v$version`:" -ForegroundColor Green
+    Write-Host "----------------------------------------" -ForegroundColor Cyan
+    Write-Host $releaseNotes -ForegroundColor White
+    Write-Host "----------------------------------------" -ForegroundColor Cyan
+    Write-Host ""
+} else {
+    Write-Host "No release notes found for v$version" -ForegroundColor Yellow
+}
+
 # Restore and build
 Write-Host "Restoring dependencies..." -ForegroundColor Cyan
 dotnet restore src/AudioToggle.csproj -r win-x64
@@ -76,6 +117,17 @@ Write-Host "Release package: $zipPath" -ForegroundColor Green
 
 $zipFile = Get-Item $zipPath
 Write-Host ("ZIP file size: {0:N2} MB" -f ($zipFile.Length / 1MB)) -ForegroundColor Green
+
+# Display release notes again for easy copying
+if ($releaseNotes) {
+    Write-Host ""
+    Write-Host "=== RELEASE NOTES FOR GITHUB ===" -ForegroundColor Green
+    Write-Host "AudioToggle v$version" -ForegroundColor White
+    Write-Host ""
+    Write-Host $releaseNotes -ForegroundColor White
+    Write-Host ""
+    Write-Host "=== END RELEASE NOTES ===" -ForegroundColor Green
+}
 
 if (-not $NoPause) {
     Read-Host "Press Enter to exit"
