@@ -34,13 +34,12 @@ namespace AudioToggle
         public void InvalidateCache()
             => impl.InvalidateCache();
 
-        [UnconditionalSuppressMessage("Trim", "IL2026:Using member 'System.Text.Json.JsonSerializer.Deserialize<TValue>(String, JsonSerializerOptions)' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code", Justification = "Types are known at compile time and preserved by JsonSerializable attributes")]
         public List<string> GetEnabledDevicesForCycling()
         {
             var enabledDevicesJson = PersistService.GetString("enabledDevices", "[]");
             try
             {
-                var enabledDevices = System.Text.Json.JsonSerializer.Deserialize(enabledDevicesJson, typeof(List<string>), AudioToggleJsonContext.Default) as List<string> ?? new List<string>();
+                var enabledDevices = System.Text.Json.JsonSerializer.Deserialize(enabledDevicesJson, typeof(List<string>)) as List<string> ?? new List<string>();
                 // Filter to only include devices that actually exist
                 var allDevices = GetAudioDeviceNames();
                 return enabledDevices.Where(name => allDevices.Contains(name)).ToList();

@@ -7,7 +7,6 @@ using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Avalonia.Interactivity;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Diagnostics.CodeAnalysis;
 
 namespace AudioToggle
@@ -22,7 +21,6 @@ namespace AudioToggle
 
         public SettingsWindow()
         {
-            _instance = this;
             this.audioServiceAdapter = new AudioServiceAdapter();
             AvaloniaXamlLoader.Load(this);
 
@@ -34,12 +32,68 @@ namespace AudioToggle
                 e.Cancel = true;
                 this.Hide();
             };
+
+            System.Diagnostics.Debug.WriteLine("SettingsWindow instance created");
+        }
+
+        // Static method to get or create the settings window instance
+        public static SettingsWindow GetInstance()
+        {
+            if (_instance == null)
+            {
+                System.Diagnostics.Debug.WriteLine("Creating new SettingsWindow instance");
+                _instance = new SettingsWindow();
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine("Reusing existing SettingsWindow instance");
+            }
+            return _instance;
+        }
+
+        // Static method to show the settings window (ensures only one instance)
+        public static void ShowInstance()
+        {
+            System.Diagnostics.Debug.WriteLine("ShowInstance called");
+            var instance = GetInstance();
+
+            // Ensure the window is visible and activated
+            if (!instance.IsVisible)
+            {
+                instance.Show();
+            }
+
+            instance.Activate();
+            instance.WindowState = WindowState.Normal;
+            instance.Topmost = true;
+            instance.Topmost = false; // Reset topmost to bring to front
+            instance.Focus();
+
+            System.Diagnostics.Debug.WriteLine("SettingsWindow shown and activated");
+        }
+
+        // Static method to hide the settings window
+        public static void HideInstance()
+        {
+            if (_instance != null)
+            {
+                _instance.Hide();
+            }
+        }
+
+        // Static method to check if instance exists and is visible
+        public static bool IsInstanceVisible()
+        {
+            return _instance != null && _instance.IsVisible;
         }
 
         // Static method to update the default device from external classes
         public static void UpdateDefaultDevice(string newDefaultDeviceName)
         {
-            _instance?.RefreshDefaultDevice(newDefaultDeviceName);
+            if (_instance != null)
+            {
+                _instance.RefreshDefaultDevice(newDefaultDeviceName);
+            }
         }
 
         private void RefreshDefaultDevice(string newDefaultDeviceName)
@@ -83,13 +137,12 @@ namespace AudioToggle
             listBox.ItemsSource = deviceViewModels;
         }
 
-        [UnconditionalSuppressMessage("Trim", "IL2026:Using member 'System.Text.Json.JsonSerializer.Deserialize<TValue>(String, JsonSerializerOptions)' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code", Justification = "Types are known at compile time and preserved by JsonSerializable attributes")]
         private List<string> GetEnabledDevices()
         {
             var enabledDevicesJson = PersistService.GetString("enabledDevices", "[]");
             try
             {
-                return System.Text.Json.JsonSerializer.Deserialize(enabledDevicesJson, typeof(List<string>), AudioToggleJsonContext.Default) as List<string> ?? new List<string>();
+                return JsonSerializer.Deserialize(enabledDevicesJson, typeof(List<string>)) as List<string> ?? new List<string>();
             }
             catch
             {
@@ -97,7 +150,6 @@ namespace AudioToggle
             }
         }
 
-        [UnconditionalSuppressMessage("Trim", "IL2026:Using member 'System.Text.Json.JsonSerializer.Serialize<TValue>(TValue, JsonSerializerOptions)' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code", Justification = "Types are known at compile time and preserved by JsonSerializable attributes")]
         private void SaveEnabledDevices(List<DeviceViewModel> devices)
         {
             var enabledDevices = devices.Where(d => d.IsEnabled).Select(d => d.Name).ToList();
@@ -133,7 +185,7 @@ namespace AudioToggle
             var hotkeyTextBox = this.FindControl<TextBox>("HotkeyTextBox");
 
             // Load saved hotkey or use default
-            var savedHotkey = PersistService.GetString("hotkey", "Ctrl+Alt+F1");
+            var savedHotkey = PersistService.GetString("hotkey", "Ctrl+Shift+F1");
             hotkeyTextBox.Text = savedHotkey;
 
             // Handle key input for hotkey capture
@@ -380,7 +432,7 @@ namespace AudioToggle
 
         public void OnCloseClicked(object sender, EventArgs args)
         {
-            this.Hide();
+            SettingsWindow.HideInstance();
         }
     }
 }

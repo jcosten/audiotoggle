@@ -1,11 +1,11 @@
 using System;
+using System.IO;
 using System.Windows.Input;
 using GlobalHotKey;
 using Avalonia;
 using Avalonia.Logging;
 using Avalonia.Markup.Xaml;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Controls;
 
 namespace AudioToggle
 {
@@ -120,15 +120,21 @@ namespace AudioToggle
                 desktop.MainWindow = null;
             }
 
+            // Check if settings file exists, if not show settings window for first-time setup
+            if (!PersistService.SettingsFileExists())
+            {
+                SettingsWindow.ShowInstance();
+            }
+
             base.OnFrameworkInitializationCompleted();
         }
 
         public void OnSettings_Click(object sender, System.EventArgs args)
         {
-            var settingsWindow = new SettingsWindow();
-            
-             settingsWindow.Show();
-           
+            if (!SettingsWindow.IsInstanceVisible())
+            {
+                SettingsWindow.ShowInstance();
+            }
         }
 
         public void OnExit_Click(object sender, System.EventArgs args)
