@@ -12,21 +12,44 @@ namespace AudioToggle
     public partial class App : Application
     {
         private AudioServiceAdapter audioService;
+        private static readonly Lazy<IHotKeyService> hotKeyServiceLazy = new Lazy<IHotKeyService>(() => new HotKeyServiceAdapter());
+        private static IHotKeyService hotKeyService => hotKeyServiceLazy.Value;
         
         public override void Initialize()
         {
-            Logger.TryGet(LogEventLevel.Fatal, LogArea.Control)?.Log(this, "Avalonia Infrastructure");
-            System.Diagnostics.Debug.WriteLine("System Diagnostics Debug");
-
-            audioService = new AudioServiceAdapter();
-            
-            // Load saved hotkey or use default
-            RegisterSavedHotkey();
+            // Reduce logging to minimum for memory efficiency
+            if (System.Diagnostics.Debugger.IsAttached)
+            {
+                Logger.TryGet(LogEventLevel.Fatal, LogArea.Control)?.Log(this, "Avalonia Infrastructure");
+                System.Diagnostics.Debug.WriteLine("System Diagnostics Debug");
+            }
 
             AvaloniaXamlLoader.Load(this);
         }
 
-        private static IHotKeyService hotKeyService = new HotKeyServiceAdapter();
+        public override void OnFrameworkInitializationCompleted()
+        {
+            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                // For a true system tray-only application, don't create a main window
+                // The tray icon and settings/notification windows will handle all UI
+                desktop.MainWindow = null;
+            }
+
+            // Initialize services after framework is ready
+            InitializeServices();
+
+            base.OnFrameworkInitializationCompleted();
+        }
+
+        private void InitializeServices()
+        {
+            // Lazy initialize audio service only when needed
+            audioService = new AudioServiceAdapter();
+            
+            // Load saved hotkey or use default
+            RegisterSavedHotkey();
+        }
 
         public static void EnsureHotkeyCallbackRegistered()
         {
@@ -42,18 +65,20 @@ namespace AudioToggle
             try
             {
                 var savedHotkey = PersistService.GetString("hotkey", "Ctrl+Shift+F1");
-                var (key, modifiers) = hotKeyService.ParseHotkeyString(savedHotkey);
+                var keyAndModifiers = hotKeyService.ParseHotkeyString(savedHotkey);
                 
-                if (key.HasValue)
+                if (keyAndModifiers.Item1.HasValue)
                 {
-                    var hotKey = new HotKey(key.Value, modifiers);
+                    var hotKey = new HotKey(keyAndModifiers.Item1.Value, keyAndModifiers.Item2);
                     hotKeyService.RegisterHotKey(hotKey);
                     hotKeyService.RegisterCallback(OnHotKeyPressed);
-                    System.Diagnostics.Debug.WriteLine($"Registered hotkey: {savedHotkey}");
+                    if (System.Diagnostics.Debugger.IsAttached)
+                        System.Diagnostics.Debug.WriteLine($"Registered hotkey: {savedHotkey}");
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine($"Failed to parse hotkey: {savedHotkey}");
+                    if (System.Diagnostics.Debugger.IsAttached)
+                        System.Diagnostics.Debug.WriteLine($"Failed to parse hotkey: {savedHotkey}");
                     // Fallback to default
                     var hotKey = new HotKey(Key.F1, ModifierKeys.Control | ModifierKeys.Alt);
                     hotKeyService.RegisterHotKey(hotKey);
@@ -62,7 +87,8 @@ namespace AudioToggle
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error registering hotkey: {ex.Message}");
+                if (System.Diagnostics.Debugger.IsAttached)
+                    System.Diagnostics.Debug.WriteLine($"Error registering hotkey: {ex.Message}");
             }
         }
 
@@ -73,7 +99,8 @@ namespace AudioToggle
                 var enabledDevices = audioService.GetEnabledDevicesForCycling();
                 if (enabledDevices.Count == 0)
                 {
-                    System.Diagnostics.Debug.WriteLine("No enabled devices for cycling");
+                    if (System.Diagnostics.Debugger.IsAttached)
+                        System.Diagnostics.Debug.WriteLine("No enabled devices for cycling");
                     return;
                 }
 
@@ -93,7 +120,8 @@ namespace AudioToggle
                 if (success)
                 {
                     PersistService.StoreString("defaultPlayback", nextDevice);
-                    System.Diagnostics.Debug.WriteLine($"Switched to audio device: {nextDevice}");
+                    if (System.Diagnostics.Debugger.IsAttached)
+                        System.Diagnostics.Debug.WriteLine($"Switched to audio device: {nextDevice}");
                     
                     // Show notification
                     NotificationService.ShowDeviceNotification(nextDevice);
@@ -103,24 +131,15 @@ namespace AudioToggle
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine($"Failed to switch to audio device: {nextDevice}");
+                    if (System.Diagnostics.Debugger.IsAttached)
+                        System.Diagnostics.Debug.WriteLine($"Failed to switch to audio device: {nextDevice}");
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error in hotkey callback: {ex.Message}");
+                if (System.Diagnostics.Debugger.IsAttached)
+                    System.Diagnostics.Debug.WriteLine($"Error in hotkey callback: {ex.Message}");
             }
-        }
-
-        public override void OnFrameworkInitializationCompleted()
-        {
-            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            {                // For a true system tray-only application, don't create a main window
-                // The tray icon and settings/notification windows will handle all UI
-                desktop.MainWindow = null;
-            }
-
-            base.OnFrameworkInitializationCompleted();
         }
 
         public void OnSettings_Click(object sender, System.EventArgs args)

@@ -15,13 +15,29 @@
     <Copyright></Copyright>
     <AssemblyTitle>AudioToggle</AssemblyTitle>
 
+    <!-- Memory optimization settings -->
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+    <RetainVMGarbageCollection>false</RetainVMGarbageCollection>
+    <TieredCompilation>false</TieredCompilation>
+    <TieredCompilationQuickJit>false</TieredCompilationQuickJit>
+    
     <!-- Enable COM interop for AudioSwitcher.AudioApi.CoreAudio -->
     <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
-    <!-- Preserve COM-related assemblies during trimming -->
-    <TrimmerDefaultAction>link</TrimmerDefaultAction>
-    <SuppressTrimAnalysisWarnings>false</SuppressTrimAnalysisWarnings>
-    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    
+    <!-- Memory optimization without problematic trimming -->
+    <PublishTrimmed>false</PublishTrimmed>
+    
+    <!-- Disable unnecessary features for smaller footprint -->
+    <EventSourceSupport>false</EventSourceSupport>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <EnableRequestDelegateGenerator>false</EnableRequestDelegateGenerator>
+    
+    <!-- Additional memory optimizations -->
+    <PublishReadyToRun>false</PublishReadyToRun>
+    <PublishReadyToRunShowWarnings>false</PublishReadyToRunShowWarnings>
+    
     <!-- Include SkiaSharp native assets -->
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <!-- Exclude PDB files from Release builds -->
@@ -33,12 +49,9 @@
     <AvaloniaResource Include="assets\**" />
   </ItemGroup>
 
-  <!-- Preserve COM-related assemblies during trimming -->
+  <!-- Preserve COM-related assemblies -->
   <ItemGroup>
-    <TrimmerRootAssembly Include="AudioSwitcher.AudioApi.CoreAudio" />
-    <TrimmerRootAssembly Include="System.Runtime.InteropServices" />
-    <TrimmerRootAssembly Include="System.Runtime.InteropServices.ComTypes" />
-    <TrimmerRootAssembly Include="System.Runtime.InteropServices.RuntimeInformation" />
+    <!-- Remove trimmer root assemblies since we're not trimming -->
   </ItemGroup>
 
   <ItemGroup>
