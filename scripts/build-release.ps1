@@ -55,7 +55,7 @@ Write-Host "Using version: $version" -ForegroundColor Green
 
 # Restore and build
 Write-Host "Restoring dependencies..." -ForegroundColor Cyan
-dotnet restore src/AudioToggle.csproj
+dotnet restore src/AudioToggle.csproj -r win-x64
 if ($LASTEXITCODE -ne 0) {
     Exit-WithError "Failed to restore dependencies"
 }
