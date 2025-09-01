@@ -34,6 +34,18 @@ namespace AudioToggle
         public void InvalidateCache()
             => impl.InvalidateCache();
 
+        // Input device methods
+        public List<string> GetInputDeviceNames() => impl.GetInputDeviceNames();
+
+        public (string Name, string ID)? GetInputDeviceByFriendlyName(string friendlyName)
+            => impl.GetInputDeviceByFriendlyName(friendlyName);
+
+        public bool SetDefaultInputDevice(string friendlyName)
+            => impl.SetDefaultInputDevice(friendlyName);
+
+        public (string Name, string ID)? GetDefaultInputDevice()
+            => impl.GetDefaultInputDevice();
+
         public List<string> GetEnabledDevicesForCycling()
         {
             var enabledDevicesJson = PersistService.GetString("enabledDevices", "[]");
@@ -48,6 +60,23 @@ namespace AudioToggle
             {
                 // Fallback to all devices if there's an issue
                 return GetAudioDeviceNames();
+            }
+        }
+
+        public List<string> GetEnabledInputDevicesForCycling()
+        {
+            var enabledDevicesJson = PersistService.GetString("enabledInputDevices", "[]");
+            try
+            {
+                var enabledDevices = System.Text.Json.JsonSerializer.Deserialize(enabledDevicesJson, typeof(List<string>)) as List<string> ?? new List<string>();
+                // Filter to only include devices that actually exist
+                var allDevices = GetInputDeviceNames();
+                return enabledDevices.Where(name => allDevices.Contains(name)).ToList();
+            }
+            catch
+            {
+                // Fallback to all devices if there's an issue
+                return GetInputDeviceNames();
             }
         }
     }

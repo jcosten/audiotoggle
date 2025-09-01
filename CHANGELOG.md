@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.1.0] - 2025-09-01
+
+### Added
+- Support for input devices
+
 ## [1.0.1] - 2025-08-31
 
 ### Fixed

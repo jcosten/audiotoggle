@@ -5,9 +5,9 @@
     <TargetFramework>net9.0-windows</TargetFramework>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <AvaloniaUseCompiledBindingsByDefault>True</AvaloniaUseCompiledBindingsByDefault>
-    <Version>1.0.1</Version>
-    <AssemblyVersion>1.0.1</AssemblyVersion>
-    <FileVersion>1.0.1</FileVersion>
+    <Version>1.1.0</Version>
+    <AssemblyVersion>1.1.0</AssemblyVersion>
+    <FileVersion>1.1.0</FileVersion>
     <Product>AudioToggle</Product>
     <Description>Windows utility for switching audio devices with global hotkey</Description>
     <AssemblyTitle>AudioToggle</AssemblyTitle>
@@ -16,6 +16,8 @@
     <DebugSymbols Condition="'$(Configuration)' == 'Release'">false</DebugSymbols>
     <DebugType Condition="'$(Configuration)' == 'Release'">None</DebugType>
     <GenerateDocumentationFile Condition="'$(Configuration)' == 'Release'">false</GenerateDocumentationFile>
+    <!-- Suppress NU1701 warnings for AudioSwitcher packages -->
+    <NoWarn>NU1701</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <AvaloniaResource Include="assets\**" />
@@ -27,7 +29,7 @@
     <PackageReference Include="Avalonia" Version="11.3.4" />
     <PackageReference Include="Avalonia.Desktop" Version="11.3.4" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.4" />
-    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.2.3" />
+    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.3.4" />
     <PackageReference Include="GlobalHotKeyCore" Version="1.2.0" />
   </ItemGroup>
 

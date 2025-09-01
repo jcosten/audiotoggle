@@ -12,20 +12,33 @@ namespace AudioToggle
         private static CoreAudioController Controller => _controller.Value;
         
         // Cache devices to avoid repeated enumeration
-        private List<CoreAudioDevice> _cachedDevices;
+        private List<CoreAudioDevice> _cachedPlaybackDevices;
+        private List<CoreAudioDevice> _cachedInputDevices;
         private DateTime _lastCacheUpdate = DateTime.MinValue;
         private readonly TimeSpan _cacheValidTime = TimeSpan.FromSeconds(5); // Cache for 5 seconds
 
-        private List<CoreAudioDevice> GetCachedActiveDevices()
+        private List<CoreAudioDevice> GetCachedActivePlaybackDevices()
         {
-            if (_cachedDevices == null || DateTime.Now - _lastCacheUpdate > _cacheValidTime)
+            if (_cachedPlaybackDevices == null || DateTime.Now - _lastCacheUpdate > _cacheValidTime)
             {
-                _cachedDevices = Controller.GetPlaybackDevices()
+                _cachedPlaybackDevices = Controller.GetPlaybackDevices()
                     .Where(d => d.State == DeviceState.Active)
                     .ToList();
                 _lastCacheUpdate = DateTime.Now;
             }
-            return _cachedDevices;
+            return _cachedPlaybackDevices;
+        }
+
+        private List<CoreAudioDevice> GetCachedActiveInputDevices()
+        {
+            if (_cachedInputDevices == null || DateTime.Now - _lastCacheUpdate > _cacheValidTime)
+            {
+                _cachedInputDevices = Controller.GetCaptureDevices()
+                    .Where(d => d.State == DeviceState.Active)
+                    .ToList();
+                _lastCacheUpdate = DateTime.Now;
+            }
+            return _cachedInputDevices;
         }
 
         public (string Name, string ID)? GetDefaultPlaybackDevice()
@@ -40,7 +53,7 @@ namespace AudioToggle
 
         public List<string> GetAudioDeviceNames()
         {
-            return GetCachedActiveDevices()
+            return GetCachedActivePlaybackDevices()
                 .Select(device => device.FullName)
                 .ToList();
         }
@@ -48,7 +61,7 @@ namespace AudioToggle
         // method to get device by friendly name
         public (string Name, string ID)? GetDeviceByFriendlyName(string friendlyName)
         {
-            var device = GetCachedActiveDevices()
+            var device = GetCachedActivePlaybackDevices()
                 .FirstOrDefault(d => d.FullName.Equals(friendlyName, StringComparison.OrdinalIgnoreCase));
             
             if (device != null)
@@ -63,14 +76,14 @@ namespace AudioToggle
             try
             {
                 // Find device directly from cache instead of multiple lookups
-                var device = GetCachedActiveDevices()
+                var device = GetCachedActivePlaybackDevices()
                     .FirstOrDefault(d => d.FullName.Equals(friendlyName, StringComparison.OrdinalIgnoreCase));
 
                 if (device == null)
                 {
                     // If not in cache, refresh and try again
                     InvalidateCache();
-                    device = GetCachedActiveDevices()
+                    device = GetCachedActivePlaybackDevices()
                         .FirstOrDefault(d => d.FullName.Equals(friendlyName, StringComparison.OrdinalIgnoreCase));
                 }
 
@@ -90,9 +103,72 @@ namespace AudioToggle
             }
         }
 
+        // Input device methods
+        public (string Name, string ID)? GetDefaultInputDevice()
+        {
+            var device = Controller.DefaultCaptureDevice;
+            if (device != null)
+            {
+                return (device.FullName, device.Id.ToString());
+            }
+            return null;
+        }
+
+        public List<string> GetInputDeviceNames()
+        {
+            return GetCachedActiveInputDevices()
+                .Select(device => device.FullName)
+                .ToList();
+        }
+
+        public (string Name, string ID)? GetInputDeviceByFriendlyName(string friendlyName)
+        {
+            var device = GetCachedActiveInputDevices()
+                .FirstOrDefault(d => d.FullName.Equals(friendlyName, StringComparison.OrdinalIgnoreCase));
+            
+            if (device != null)
+            {
+                return (device.FullName, device.Id.ToString());
+            }
+            return null;
+        }
+
+        public bool SetDefaultInputDevice(string friendlyName)
+        {
+            try
+            {
+                // Find device directly from cache instead of multiple lookups
+                var device = GetCachedActiveInputDevices()
+                    .FirstOrDefault(d => d.FullName.Equals(friendlyName, StringComparison.OrdinalIgnoreCase));
+
+                if (device == null)
+                {
+                    // If not in cache, refresh and try again
+                    InvalidateCache();
+                    device = GetCachedActiveInputDevices()
+                        .FirstOrDefault(d => d.FullName.Equals(friendlyName, StringComparison.OrdinalIgnoreCase));
+                }
+
+                if (device != null)
+                {
+                    // Use async method for better performance and return immediately
+                    _ = device.SetAsDefaultAsync();
+                    return true;
+                }
+                
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error setting default input device: {ex.Message}");
+                return false;
+            }
+        }
+
         public void InvalidateCache()
         {
-            _cachedDevices = null;
+            _cachedPlaybackDevices = null;
+            _cachedInputDevices = null;
             _lastCacheUpdate = DateTime.MinValue;
         }
     }

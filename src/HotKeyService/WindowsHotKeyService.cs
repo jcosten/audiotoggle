@@ -10,7 +10,11 @@ namespace AudioToggle
     {
         private HotKeyManager manager;
         private HotKey key;
+        private HotKey outputKey;
+        private HotKey inputKey;
         private Action keyCallback;
+        private Action outputKeyCallback;
+        private Action inputKeyCallback;
 
 
         public void RegisterHotKey(HotKey hotKey, ModifierKeys modifiers1 = ModifierKeys.None, ModifierKeys modifiers2 = ModifierKeys.None)
@@ -29,9 +33,50 @@ namespace AudioToggle
             key = manager.Register(hotKey.Key, combinedModifiers);
             System.Diagnostics.Debug.WriteLine($"Registered hotkey: {hotKey.Key} with modifiers: {combinedModifiers}");
         }
+
+        public void RegisterOutputHotKey(HotKey hotKey)
+        {
+            if (manager == null)
+            {
+                manager = new HotKeyManager();
+                manager.KeyPressed += Manager_KeyPressed;
+            }
+
+            // Unregister existing output key if any
+            UnregisterOutputHotKey();
+
+            outputKey = manager.Register(hotKey.Key, hotKey.Modifiers);
+            System.Diagnostics.Debug.WriteLine($"Registered output hotkey: {hotKey.Key} with modifiers: {hotKey.Modifiers}");
+        }
+
+        public void RegisterInputHotKey(HotKey hotKey)
+        {
+            if (manager == null)
+            {
+                manager = new HotKeyManager();
+                manager.KeyPressed += Manager_KeyPressed;
+            }
+
+            // Unregister existing input key if any
+            UnregisterInputHotKey();
+
+            inputKey = manager.Register(hotKey.Key, hotKey.Modifiers);
+            System.Diagnostics.Debug.WriteLine($"Registered input hotkey: {hotKey.Key} with modifiers: {hotKey.Modifiers}");
+        }
+
         public void RegisterCallback(Action callback)
         {
             keyCallback = callback;
+        }
+
+        public void RegisterOutputCallback(Action callback)
+        {
+            outputKeyCallback = callback;
+        }
+
+        public void RegisterInputCallback(Action callback)
+        {
+            inputKeyCallback = callback;
         }
 
         public void UnregisterKey()
@@ -40,15 +85,55 @@ namespace AudioToggle
                 manager.Unregister(key);
         }
 
+        public void UnregisterOutputHotKey()
+        {
+            if (manager != null && outputKey != null)
+                manager.Unregister(outputKey);
+        }
+
+        public void UnregisterInputHotKey()
+        {
+            if (manager != null && inputKey != null)
+                manager.Unregister(inputKey);
+        }
+
         private void KeyPressed(object sender, KeyPressedEventArgs e)
         {
             keyCallback?.Invoke();
             System.Diagnostics.Debug.WriteLine("Hot key pressed!");
         }
 
+        private void Manager_KeyPressed(object sender, KeyPressedEventArgs e)
+        {
+            if (outputKey != null && e.HotKey.Key == outputKey.Key && e.HotKey.Modifiers == outputKey.Modifiers)
+            {
+                outputKeyCallback?.Invoke();
+                System.Diagnostics.Debug.WriteLine("Output hot key pressed!");
+            }
+            else if (inputKey != null && e.HotKey.Key == inputKey.Key && e.HotKey.Modifiers == inputKey.Modifiers)
+            {
+                inputKeyCallback?.Invoke();
+                System.Diagnostics.Debug.WriteLine("Input hot key pressed!");
+            }
+        }
+
+        private void OutputKeyPressed(object sender, KeyPressedEventArgs e)
+        {
+            outputKeyCallback?.Invoke();
+            System.Diagnostics.Debug.WriteLine("Output hot key pressed!");
+        }
+
+        private void InputKeyPressed(object sender, KeyPressedEventArgs e)
+        {
+            inputKeyCallback?.Invoke();
+            System.Diagnostics.Debug.WriteLine("Input hot key pressed!");
+        }
+
         public void Dispose()
         {
             UnregisterKey();
+            UnregisterOutputHotKey();
+            UnregisterInputHotKey();
             if (manager != null)
             {
                 manager.Dispose();

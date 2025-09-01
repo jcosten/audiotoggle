@@ -26,14 +26,44 @@ namespace AudioToggle
             _service.RegisterHotKey(hotKey, modifiers1, modifiers2);
         }
 
+        public void RegisterOutputHotKey(HotKey hotKey)
+        {
+            _service.RegisterOutputHotKey(hotKey);
+        }
+
+        public void RegisterInputHotKey(HotKey hotKey)
+        {
+            _service.RegisterInputHotKey(hotKey);
+        }
+
         public void RegisterCallback(Action callback)
         {
             _service.RegisterCallback(callback);
         }
 
+        public void RegisterOutputCallback(Action callback)
+        {
+            _service.RegisterOutputCallback(callback);
+        }
+
+        public void RegisterInputCallback(Action callback)
+        {
+            _service.RegisterInputCallback(callback);
+        }
+
         public void UnregisterKey()
         {
             _service.UnregisterKey();
+        }
+
+        public void UnregisterOutputHotKey()
+        {
+            _service.UnregisterOutputHotKey();
+        }
+
+        public void UnregisterInputHotKey()
+        {
+            _service.UnregisterInputHotKey();
         }
 
         public void Dispose()

@@ -17,6 +17,7 @@ namespace AudioToggle
         private readonly AudioServiceAdapter audioServiceAdapter;
         private static IHotKeyService hotKeyService = new HotKeyServiceAdapter();
         private List<DeviceViewModel> deviceViewModels;
+        private List<DeviceViewModel> inputDeviceViewModels;
         private static SettingsWindow _instance;
 
         public SettingsWindow()
@@ -24,8 +25,8 @@ namespace AudioToggle
             this.audioServiceAdapter = new AudioServiceAdapter();
             AvaloniaXamlLoader.Load(this);
 
-            InitializeAudioDevicesTab();
-            InitializeHotkeysTab();
+            InitializeOutputDevicesTab();
+            InitializeInputDevicesTab();
             InitializeGeneralTab();
 
             this.Closing += (sender, e) => {
@@ -96,6 +97,15 @@ namespace AudioToggle
             }
         }
 
+        // Static method to update the default input device from external classes
+        public static void UpdateDefaultInputDevice(string newDefaultDeviceName)
+        {
+            if (_instance != null)
+            {
+                _instance.RefreshInputDefaultDevice(newDefaultDeviceName);
+            }
+        }
+
         private void RefreshDefaultDevice(string newDefaultDeviceName)
         {
             if (deviceViewModels != null)
@@ -108,7 +118,7 @@ namespace AudioToggle
             }
         }
 
-        private void InitializeAudioDevicesTab()
+        private void InitializeOutputDevicesTab()
         {
             var listBox = this.FindControl<ItemsControl>("AudioDevicesListBox");
 
@@ -135,6 +145,145 @@ namespace AudioToggle
             }
             
             listBox.ItemsSource = deviceViewModels;
+
+            // Initialize hotkey settings
+            var resetOutputHotkeyButton = this.FindControl<Button>("ResetOutputHotkeyButton");
+            var outputHotkeyTextBox = this.FindControl<TextBox>("OutputHotkeyTextBox");
+
+            // Load saved hotkey or use default
+            var savedOutputHotkey = PersistService.GetString("outputHotkey", "Ctrl+Shift+F1");
+            outputHotkeyTextBox.Text = savedOutputHotkey;
+
+            // Handle key input for hotkey capture
+            outputHotkeyTextBox.KeyDown += OnOutputHotkeyTextBoxKeyDown;
+            outputHotkeyTextBox.GotFocus += (s, e) => 
+            {
+                outputHotkeyTextBox.Text = "Press key combination...";
+                outputHotkeyTextBox.SelectAll();
+            };
+            outputHotkeyTextBox.LostFocus += (s, e) =>
+            {
+                if (outputHotkeyTextBox.Text == "Press key combination...")
+                {
+                    outputHotkeyTextBox.Text = savedOutputHotkey;
+                }
+            };
+
+            resetOutputHotkeyButton.Click += OnResetOutputHotkeyClicked;
+        }
+
+        private void InitializeInputDevicesTab()
+        {
+            var inputListBox = this.FindControl<ItemsControl>("InputDevicesListBox");
+
+            // Invalidate cache to ensure we get fresh device information
+            this.audioServiceAdapter.InvalidateCache();
+            
+            var inputDeviceNames = this.audioServiceAdapter.GetInputDeviceNames();
+            var defaultInputDevice = GetDefaultInputDeviceName();
+            var enabledInputDevices = GetEnabledInputDevices();
+            inputDeviceViewModels = new List<DeviceViewModel>();
+            
+            foreach (var name in inputDeviceNames)
+            {
+                var deviceViewModel = new DeviceViewModel
+                {
+                    Name = name,
+                    IsDefault = name == defaultInputDevice,
+                    IsEnabled = enabledInputDevices.Contains(name)
+                };
+                
+                // Subscribe to changes in the IsEnabled property
+                deviceViewModel.EnabledChanged += (s, e) => SaveEnabledInputDevices(inputDeviceViewModels);
+                inputDeviceViewModels.Add(deviceViewModel);
+            }
+            
+            inputListBox.ItemsSource = inputDeviceViewModels;
+
+            // Initialize input hotkey settings
+            var resetInputHotkeyButton = this.FindControl<Button>("ResetInputHotkeyButton");
+            var inputHotkeyTextBox = this.FindControl<TextBox>("InputHotkeyTextBox");
+
+            // Load saved hotkey or use default
+            var savedInputHotkey = PersistService.GetString("inputHotkey", "Ctrl+Shift+F2");
+            inputHotkeyTextBox.Text = savedInputHotkey;
+
+            // Handle key input for hotkey capture
+            inputHotkeyTextBox.KeyDown += OnInputHotkeyTextBoxKeyDown;
+            inputHotkeyTextBox.GotFocus += (s, e) => 
+            {
+                inputHotkeyTextBox.Text = "Press key combination...";
+                inputHotkeyTextBox.SelectAll();
+            };
+            inputHotkeyTextBox.LostFocus += (s, e) =>
+            {
+                if (inputHotkeyTextBox.Text == "Press key combination...")
+                {
+                    inputHotkeyTextBox.Text = savedInputHotkey;
+                }
+            };
+
+            resetInputHotkeyButton.Click += OnResetInputHotkeyClicked;
+        }
+
+        private List<string> GetEnabledInputDevices()
+        {
+            var enabledDevicesJson = PersistService.GetString("enabledInputDevices", "[]");
+            try
+            {
+                return JsonSerializer.Deserialize(enabledDevicesJson, typeof(List<string>)) as List<string> ?? new List<string>();
+            }
+            catch
+            {
+                return new List<string>();
+            }
+        }
+
+        private void SaveEnabledInputDevices(List<DeviceViewModel> devices)
+        {
+            var enabledDevices = devices.Where(d => d.IsEnabled).Select(d => d.Name).ToList();
+
+            // Use human-readable JSON formatting
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true
+            };
+            var json = System.Text.Json.JsonSerializer.Serialize(enabledDevices, options);
+            PersistService.StoreString("enabledInputDevices", json);
+        }
+
+        private void InputDeviceText_PointerPressed(object sender, PointerPressedEventArgs e)
+        {
+            if (sender is TextBlock textBlock && inputDeviceViewModels != null)
+            {
+                // Find the device view model that corresponds to this text block
+                var deviceName = textBlock.Text;
+                var deviceViewModel = inputDeviceViewModels.FirstOrDefault(d => d.Name == deviceName);
+                
+                if (deviceViewModel != null)
+                {
+                    // Toggle the IsEnabled property
+                    deviceViewModel.IsEnabled = !deviceViewModel.IsEnabled;
+                }
+            }
+        }
+
+        private string GetDefaultInputDeviceName()
+        {
+            var defaultDevice = this.audioServiceAdapter.GetDefaultInputDevice();
+            return defaultDevice?.Name;
+        }
+
+        private void RefreshInputDefaultDevice(string newDefaultDeviceName)
+        {
+            if (inputDeviceViewModels != null)
+            {
+                // Update the IsDefault property for all devices
+                foreach (var device in inputDeviceViewModels)
+                {
+                    device.IsDefault = device.Name == newDefaultDeviceName;
+                }
+            }
         }
 
         private List<string> GetEnabledDevices()
@@ -179,32 +328,7 @@ namespace AudioToggle
             }
         }
 
-        private void InitializeHotkeysTab()
-        {
-            var changeHotkeyButton = this.FindControl<Button>("ChangeHotkeyButton");
-            var hotkeyTextBox = this.FindControl<TextBox>("HotkeyTextBox");
 
-            // Load saved hotkey or use default
-            var savedHotkey = PersistService.GetString("hotkey", "Ctrl+Shift+F1");
-            hotkeyTextBox.Text = savedHotkey;
-
-            // Handle key input for hotkey capture
-            hotkeyTextBox.KeyDown += OnHotkeyTextBoxKeyDown;
-            hotkeyTextBox.GotFocus += (s, e) => 
-            {
-                hotkeyTextBox.Text = "Press key combination...";
-                hotkeyTextBox.SelectAll();
-            };
-            hotkeyTextBox.LostFocus += (s, e) =>
-            {
-                if (hotkeyTextBox.Text == "Press key combination...")
-                {
-                    hotkeyTextBox.Text = savedHotkey;
-                }
-            };
-
-            changeHotkeyButton.Click += OnResetHotkeyClicked;
-        }
 
         private void InitializeGeneralTab()
         {
@@ -277,7 +401,7 @@ namespace AudioToggle
             errorWindow.ShowDialog(this);
         }
 
-        private void OnHotkeyTextBoxKeyDown(object sender, Avalonia.Input.KeyEventArgs e)
+        private void OnOutputHotkeyTextBoxKeyDown(object sender, Avalonia.Input.KeyEventArgs e)
         {
             e.Handled = true;
             
@@ -328,7 +452,7 @@ namespace AudioToggle
             hotkeyTextBox.Text = hotkeyString;
             
             // Save the new hotkey
-            PersistService.StoreString("hotkey", hotkeyString);
+            PersistService.StoreString("outputHotkey", hotkeyString);
             
             // Try to register the new hotkey
             try
@@ -340,15 +464,15 @@ namespace AudioToggle
                 if (globalKey.HasValue)
                 {
                     // Unregister old hotkey and register new one
-                    hotKeyService.UnregisterKey();
+                    hotKeyService.UnregisterOutputHotKey();
                     var hotKey = new GlobalHotKey.HotKey(globalKey.Value, globalModifiers);
-                    hotKeyService.RegisterHotKey(hotKey);
+                    hotKeyService.RegisterOutputHotKey(hotKey);
                     
                     // Ensure the callback is registered
-                    App.EnsureHotkeyCallbackRegistered();
+                    App.EnsureOutputHotkeyCallbackRegistered();
                     
                     hotkeyTextBox.Text = hotkeyString + " ✓";
-                    System.Diagnostics.Debug.WriteLine($"Registered new hotkey: {hotkeyString}");
+                    System.Diagnostics.Debug.WriteLine($"Registered new output hotkey: {hotkeyString}");
                 }
                 else
                 {
@@ -358,7 +482,7 @@ namespace AudioToggle
             catch (Exception ex)
             {
                 hotkeyTextBox.Text = hotkeyString + " (Failed to register)";
-                System.Diagnostics.Debug.WriteLine($"Failed to register hotkey: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Failed to register output hotkey: {ex.Message}");
             }
         }
 
@@ -379,31 +503,144 @@ namespace AudioToggle
         }
 
 
-        private void OnResetHotkeyClicked(object sender, RoutedEventArgs e)
+        private void OnResetOutputHotkeyClicked(object sender, RoutedEventArgs e)
         {
-            var hotkeyTextBox = this.FindControl<TextBox>("HotkeyTextBox");
+            var outputHotkeyTextBox = this.FindControl<TextBox>("OutputHotkeyTextBox");
             var defaultHotKey = new GlobalHotKey.HotKey(System.Windows.Input.Key.F1, ModifierKeys.Control | ModifierKeys.Shift);
             // convert defaultHotkey to string in human readable format
             var defaultHotkeyString = hotKeyService.ConvertToString(defaultHotKey);
 
-            hotkeyTextBox.Text = defaultHotkeyString;
-            PersistService.StoreString("hotkey", defaultHotkeyString);
+            outputHotkeyTextBox.Text = defaultHotkeyString;
+            PersistService.StoreString("outputHotkey", defaultHotkeyString);
 
-            // Register the default hotkey
+            // Register the default output hotkey
             try
             {
-                hotKeyService.UnregisterKey();
-                hotKeyService.RegisterHotKey(defaultHotKey);
+                hotKeyService.UnregisterOutputHotKey();
+                hotKeyService.RegisterOutputHotKey(defaultHotKey);
                 
                 // Ensure the callback is registered
-                App.EnsureHotkeyCallbackRegistered();
+                App.EnsureOutputHotkeyCallbackRegistered();
 
-                hotkeyTextBox.Text = defaultHotkeyString + " ✓";
+                outputHotkeyTextBox.Text = defaultHotkeyString + " ✓";
             }
             catch (Exception ex)
             {
-                hotkeyTextBox.Text = defaultHotkeyString + " (Failed to register)";
-                System.Diagnostics.Debug.WriteLine($"Failed to register default hotkey: {ex.Message}");
+                outputHotkeyTextBox.Text = defaultHotkeyString + " (Failed to register)";
+                System.Diagnostics.Debug.WriteLine($"Failed to register default output hotkey: {ex.Message}");
+            }
+        }
+
+        private void OnInputHotkeyTextBoxKeyDown(object sender, Avalonia.Input.KeyEventArgs e)
+        {
+            e.Handled = true;
+            
+            var inputHotkeyTextBox = sender as TextBox;
+            if (inputHotkeyTextBox == null) return;
+
+            // Build modifier string
+            var modifiers = new List<string>();
+            if (e.KeyModifiers.HasFlag(KeyModifiers.Control))
+                modifiers.Add("Ctrl");
+            if (e.KeyModifiers.HasFlag(KeyModifiers.Alt))
+                modifiers.Add("Alt");
+            if (e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+                modifiers.Add("Shift");
+            if (e.KeyModifiers.HasFlag(KeyModifiers.Meta))
+                modifiers.Add("Win");
+
+            // Get the main key (ignore modifier keys themselves)
+            string mainKey;
+            switch (e.Key)
+            {
+                case Avalonia.Input.Key.LeftCtrl:
+                case Avalonia.Input.Key.RightCtrl:
+                case Avalonia.Input.Key.LeftAlt:
+                case Avalonia.Input.Key.RightAlt:
+                case Avalonia.Input.Key.LeftShift:
+                case Avalonia.Input.Key.RightShift:
+                case Avalonia.Input.Key.LWin:
+                case Avalonia.Input.Key.RWin:
+                    return; // Ignore modifier keys by themselves
+                default:
+                    mainKey = e.Key.ToString();
+                    break;
+            }
+
+            if (string.IsNullOrEmpty(mainKey)) return;
+
+            // Build hotkey string
+            var hotkeyString = modifiers.Count > 0 ? string.Join("+", modifiers) + "+" + mainKey : mainKey;
+            
+            // Require at least one modifier for global hotkeys
+            if (modifiers.Count == 0)
+            {
+                inputHotkeyTextBox.Text = "Hotkey must include modifier keys (Ctrl, Alt, Shift, or Win)";
+                return;
+            }
+
+            inputHotkeyTextBox.Text = hotkeyString;
+            
+            // Save the new hotkey
+            PersistService.StoreString("inputHotkey", hotkeyString);
+            
+            // Try to register the new hotkey
+            try
+            {
+                var avaloniaKey = e.Key;
+                var globalModifiers = ConvertToGlobalHotKeyModifiers(e.KeyModifiers);
+                var globalKey = hotKeyService.ConvertToGlobalHotKeyKey(avaloniaKey);
+
+                if (globalKey.HasValue)
+                {
+                    // Unregister old hotkey and register new one
+                    hotKeyService.UnregisterInputHotKey();
+                    var hotKey = new GlobalHotKey.HotKey(globalKey.Value, globalModifiers);
+                    hotKeyService.RegisterInputHotKey(hotKey);
+                    
+                    // Ensure the callback is registered
+                    App.EnsureInputHotkeyCallbackRegistered();
+                    
+                    inputHotkeyTextBox.Text = hotkeyString + " ✓";
+                    System.Diagnostics.Debug.WriteLine($"Registered new input hotkey: {hotkeyString}");
+                }
+                else
+                {
+                    inputHotkeyTextBox.Text = hotkeyString + " (Not supported)";
+                }
+            }
+            catch (Exception ex)
+            {
+                inputHotkeyTextBox.Text = hotkeyString + " (Failed to register)";
+                System.Diagnostics.Debug.WriteLine($"Failed to register input hotkey: {ex.Message}");
+            }
+        }
+
+        private void OnResetInputHotkeyClicked(object sender, RoutedEventArgs e)
+        {
+            var inputHotkeyTextBox = this.FindControl<TextBox>("InputHotkeyTextBox");
+            var defaultHotKey = new GlobalHotKey.HotKey(System.Windows.Input.Key.F2, ModifierKeys.Control | ModifierKeys.Shift);
+            // convert defaultHotkey to string in human readable format
+            var defaultHotkeyString = hotKeyService.ConvertToString(defaultHotKey);
+
+            inputHotkeyTextBox.Text = defaultHotkeyString;
+            PersistService.StoreString("inputHotkey", defaultHotkeyString);
+
+            // Register the default input hotkey
+            try
+            {
+                hotKeyService.UnregisterInputHotKey();
+                hotKeyService.RegisterInputHotKey(defaultHotKey);
+                
+                // Ensure the callback is registered
+                App.EnsureInputHotkeyCallbackRegistered();
+
+                inputHotkeyTextBox.Text = defaultHotkeyString + " ✓";
+            }
+            catch (Exception ex)
+            {
+                inputHotkeyTextBox.Text = defaultHotkeyString + " (Failed to register)";
+                System.Diagnostics.Debug.WriteLine($"Failed to register default input hotkey: {ex.Message}");
             }
         }
 

@@ -4,10 +4,10 @@
         x:Class="AudioToggle.SettingsWindow"
         Title="Audio Toggle - Settings"
         Width="500"
-        Height="400"
+        Height="700"
         Icon="avares://AudioToggle/assets/tray_icon.ico">
         <TabControl>
-        <TabItem Header="Audio Devices">
+        <TabItem Header="Output Devices">
             <StackPanel>
                 <TextBlock Text="Audio Devices:" Margin="10" />
                 <TextBlock Text="Check devices to include in hotkey cycling:" Margin="10,0,10,5" FontSize="12" Foreground="Gray"/>
@@ -24,11 +24,9 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </ScrollViewer>
-            </StackPanel>
-        </TabItem>
-        
-        <TabItem Header="Hotkeys">
-            <StackPanel>
+                
+                <Separator Margin="10"/>
+                
                 <TextBlock Text="Hotkey Settings:" Margin="10" FontWeight="Bold" />
                 <Grid Margin="10">
                     <Grid.RowDefinitions>
@@ -40,10 +38,49 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     
-                    <TextBlock Text="Switch Audio Device:" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"/>
-<TextBox x:Name="HotkeyTextBox" Grid.Row="0" Grid.Column="1" Text="Ctrl+Shift+F1" IsReadOnly="False" Margin="5" Watermark="Press keys to set hotkey..."/>
+                    <TextBlock Text="Switch Output Device:" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"/>
+                    <TextBox x:Name="OutputHotkeyTextBox" Grid.Row="0" Grid.Column="1" Text="Ctrl+Shift+F1" IsReadOnly="False" Margin="5" Watermark="Press keys to set hotkey..."/>
                     
-                    <Button x:Name="ChangeHotkeyButton" Grid.Row="1" Grid.Column="1" Content="Reset to Default" Margin="5" HorizontalAlignment="Left"/>
+                    <Button x:Name="ResetOutputHotkeyButton" Grid.Row="1" Grid.Column="1" Content="Reset to Default" Margin="5" HorizontalAlignment="Left"/>
+                </Grid>
+            </StackPanel>
+        </TabItem>
+        
+        <TabItem Header="Input Devices">
+            <StackPanel>
+                <TextBlock Text="Input Devices:" Margin="10" />
+                <TextBlock Text="Check devices to include in hotkey cycling:" Margin="10,0,10,5" FontSize="12" Foreground="Gray"/>
+                <ScrollViewer Margin="10" Height="250" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl x:Name="InputDevicesListBox">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type local:DeviceViewModel}">
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <CheckBox IsChecked="{Binding IsEnabled}" Margin="0,0,10,0" VerticalAlignment="Center"/>             
+                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center" PointerPressed="InputDeviceText_PointerPressed"/>
+                                    <TextBlock Text="  active  " Foreground="Green" Margin="0,0,5,0" IsVisible="{Binding IsDefault}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+                
+                <Separator Margin="10"/>
+                
+                <TextBlock Text="Hotkey Settings:" Margin="10" FontWeight="Bold" />
+                <Grid Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <TextBlock Text="Switch Input Device:" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"/>
+                    <TextBox x:Name="InputHotkeyTextBox" Grid.Row="0" Grid.Column="1" Text="Ctrl+Shift+F2" IsReadOnly="False" Margin="5" Watermark="Press keys to set hotkey..."/>
+                    
+                    <Button x:Name="ResetInputHotkeyButton" Grid.Row="1" Grid.Column="1" Content="Reset to Default" Margin="5" HorizontalAlignment="Left"/>
                 </Grid>
             </StackPanel>
         </TabItem>

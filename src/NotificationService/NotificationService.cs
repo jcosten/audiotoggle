@@ -42,7 +42,7 @@ namespace AudioToggle
                     CreateWindow();
                 }
 
-                // Update content
+                // Update content with device type detection
                 UpdateContent(deviceName);
 
                 // Show window
@@ -115,7 +115,7 @@ namespace AudioToggle
             var stackPanel = new StackPanel();
             stackPanel.Children.Add(new TextBlock
             {
-                Text = "🔊 Audio Toggle",
+                Text = "🔊 Audio Toggle", // Default to speaker, will be updated in UpdateContent
                 FontWeight = FontWeight.Bold,
                 Foreground = new SolidColorBrush(Color.FromRgb(0, 122, 204)),
                 Margin = new Thickness(0, 0, 0, 8)
@@ -135,9 +135,21 @@ namespace AudioToggle
         {
             if (_window?.Content is Border border && border.Child is StackPanel stackPanel)
             {
-                if (stackPanel.Children.Count >= 2 && stackPanel.Children[1] is TextBlock deviceTextBlock)
+                if (stackPanel.Children.Count >= 2)
                 {
-                    deviceTextBlock.Text = deviceName;
+                    // Update the title with appropriate icon
+                    if (stackPanel.Children[0] is TextBlock titleTextBlock)
+                    {
+                        bool isInputDevice = deviceName.StartsWith("Input:");
+                        titleTextBlock.Text = isInputDevice ? "🎤 Audio Toggle" : "🔊 Audio Toggle";
+                    }
+
+                    // Update the device name (remove "Input:" prefix for cleaner display)
+                    if (stackPanel.Children[1] is TextBlock deviceTextBlock)
+                    {
+                        string displayName = deviceName.StartsWith("Input:") ? deviceName.Substring(6).Trim() : deviceName;
+                        deviceTextBlock.Text = displayName;
+                    }
                 }
             }
         }
