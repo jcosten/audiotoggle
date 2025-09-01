@@ -2,12 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Input;
+using System.Threading.Tasks;
+using System.IO;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Avalonia.Interactivity;
 using System.Text.Json;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
 
 namespace AudioToggle
 {
@@ -34,7 +37,7 @@ namespace AudioToggle
                 this.Hide();
             };
 
-            System.Diagnostics.Debug.WriteLine("SettingsWindow instance created");
+            Debug.WriteLine("SettingsWindow instance created");
         }
 
         // Static method to get or create the settings window instance
@@ -42,12 +45,12 @@ namespace AudioToggle
         {
             if (_instance == null)
             {
-                System.Diagnostics.Debug.WriteLine("Creating new SettingsWindow instance");
+                Debug.WriteLine("Creating new SettingsWindow instance");
                 _instance = new SettingsWindow();
             }
             else
             {
-                System.Diagnostics.Debug.WriteLine("Reusing existing SettingsWindow instance");
+                Debug.WriteLine("Reusing existing SettingsWindow instance");
             }
             return _instance;
         }
@@ -55,7 +58,7 @@ namespace AudioToggle
         // Static method to show the settings window (ensures only one instance)
         public static void ShowInstance()
         {
-            System.Diagnostics.Debug.WriteLine("ShowInstance called");
+            Debug.WriteLine("ShowInstance called");
             var instance = GetInstance();
 
             // Ensure the window is visible and activated
@@ -70,7 +73,7 @@ namespace AudioToggle
             instance.Topmost = false; // Reset topmost to bring to front
             instance.Focus();
 
-            System.Diagnostics.Debug.WriteLine("SettingsWindow shown and activated");
+            Debug.WriteLine("SettingsWindow shown and activated");
         }
 
         // Static method to hide the settings window
@@ -334,11 +337,13 @@ namespace AudioToggle
         {
             var startWithWindowsCheckBox = this.FindControl<CheckBox>("StartWithWindowsCheckBox");
             var showNotificationsCheckBox = this.FindControl<CheckBox>("ShowNotificationsCheckBox");
+            var autoUpdateCheckBox = this.FindControl<CheckBox>("AutoUpdateCheckBox");
 
             // Load saved settings and check actual startup status
             var isStartupEnabled = WindowsStartupManager.IsStartupEnabled();
             startWithWindowsCheckBox.IsChecked = isStartupEnabled;
             showNotificationsCheckBox.IsChecked = PersistService.GetBool("showNotifications", true);
+            autoUpdateCheckBox.IsChecked = PersistService.GetBool("autoUpdateEnabled", true);
 
             // Handle setting changes
             startWithWindowsCheckBox.Click += (s, e) =>
@@ -349,7 +354,7 @@ namespace AudioToggle
                 if (success)
                 {
                     PersistService.StoreBool("startWithWindows", isChecked);
-                    System.Diagnostics.Debug.WriteLine($"Startup setting changed to: {isChecked}");
+                    Debug.WriteLine($"Startup setting changed to: {isChecked}");
                 }
                 else
                 {
@@ -359,6 +364,11 @@ namespace AudioToggle
                 }
             };
             showNotificationsCheckBox.Click += (s, e) => PersistService.StoreBool("showNotifications", showNotificationsCheckBox.IsChecked ?? false);
+            autoUpdateCheckBox.Click += (s, e) => PersistService.StoreBool("autoUpdateEnabled", autoUpdateCheckBox.IsChecked ?? false);
+
+            // Handle manual update check
+            var checkForUpdatesButton = this.FindControl<Button>("CheckForUpdatesButton");
+            checkForUpdatesButton.Click += OnCheckForUpdatesClicked;
         }
 
         private void ShowStartupError(string message)
@@ -472,7 +482,7 @@ namespace AudioToggle
                     App.EnsureOutputHotkeyCallbackRegistered();
                     
                     hotkeyTextBox.Text = hotkeyString + " ✓";
-                    System.Diagnostics.Debug.WriteLine($"Registered new output hotkey: {hotkeyString}");
+                    Debug.WriteLine($"Registered new output hotkey: {hotkeyString}");
                 }
                 else
                 {
@@ -482,7 +492,7 @@ namespace AudioToggle
             catch (Exception ex)
             {
                 hotkeyTextBox.Text = hotkeyString + " (Failed to register)";
-                System.Diagnostics.Debug.WriteLine($"Failed to register output hotkey: {ex.Message}");
+                Debug.WriteLine($"Failed to register output hotkey: {ex.Message}");
             }
         }
 
@@ -527,7 +537,7 @@ namespace AudioToggle
             catch (Exception ex)
             {
                 outputHotkeyTextBox.Text = defaultHotkeyString + " (Failed to register)";
-                System.Diagnostics.Debug.WriteLine($"Failed to register default output hotkey: {ex.Message}");
+                Debug.WriteLine($"Failed to register default output hotkey: {ex.Message}");
             }
         }
 
@@ -602,7 +612,7 @@ namespace AudioToggle
                     App.EnsureInputHotkeyCallbackRegistered();
                     
                     inputHotkeyTextBox.Text = hotkeyString + " ✓";
-                    System.Diagnostics.Debug.WriteLine($"Registered new input hotkey: {hotkeyString}");
+                    Debug.WriteLine($"Registered new input hotkey: {hotkeyString}");
                 }
                 else
                 {
@@ -612,7 +622,7 @@ namespace AudioToggle
             catch (Exception ex)
             {
                 inputHotkeyTextBox.Text = hotkeyString + " (Failed to register)";
-                System.Diagnostics.Debug.WriteLine($"Failed to register input hotkey: {ex.Message}");
+                Debug.WriteLine($"Failed to register input hotkey: {ex.Message}");
             }
         }
 
@@ -640,7 +650,7 @@ namespace AudioToggle
             catch (Exception ex)
             {
                 inputHotkeyTextBox.Text = defaultHotkeyString + " (Failed to register)";
-                System.Diagnostics.Debug.WriteLine($"Failed to register default input hotkey: {ex.Message}");
+                Debug.WriteLine($"Failed to register default input hotkey: {ex.Message}");
             }
         }
 
@@ -654,22 +664,281 @@ namespace AudioToggle
         {
             try
             {
-                var psi = new System.Diagnostics.ProcessStartInfo
+                var psi = new ProcessStartInfo
                 {
                     FileName = "https://github.com/jcosten/audiotoggle/",
                     UseShellExecute = true
                 };
-                System.Diagnostics.Process.Start(psi);
+                Process.Start(psi);
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to open GitHub URL: {ex.Message}");
+                Debug.WriteLine($"Failed to open GitHub URL: {ex.Message}");
             }
         }
 
         public void OnCloseClicked(object sender, EventArgs args)
         {
             SettingsWindow.HideInstance();
+        }
+
+        private async void OnCheckForUpdatesClicked(object sender, RoutedEventArgs e)
+        {
+            var button = sender as Button;
+            if (button == null) return;
+
+            var originalContent = button.Content;
+            button.Content = "Checking...";
+            button.IsEnabled = false;
+
+            try
+            {
+                var updateService = new UpdateService();
+                var updateInfo = await updateService.CheckForUpdatesAsync();
+
+                if (updateInfo != null && updateService.IsUpdateAvailable(updateInfo))
+                {
+                    ShowUpdateDialog(updateInfo);
+                }
+                else
+                {
+                    ShowNoUpdatesDialog();
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error checking for updates: {ex.Message}");
+                ShowUpdateErrorDialog();
+            }
+            finally
+            {
+                button.Content = originalContent;
+                button.IsEnabled = true;
+            }
+        }
+
+        private void ShowUpdateDialog(UpdateInfo updateInfo)
+        {
+            var updateWindow = new Window
+            {
+                Title = "Update Available",
+                Width = 400,
+                Height = 250,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                CanResize = false,
+                Icon = new WindowIcon("avares://AudioToggle/assets/tray_icon.ico")
+            };
+
+            var stackPanel = new StackPanel { Margin = new Avalonia.Thickness(20) };
+
+            stackPanel.Children.Add(new TextBlock
+            {
+                Text = "AudioToggle Update Available",
+                FontWeight = Avalonia.Media.FontWeight.Bold,
+                FontSize = 16,
+                Margin = new Avalonia.Thickness(0, 0, 0, 10)
+            });
+
+            stackPanel.Children.Add(new TextBlock
+            {
+                Text = $"Version {updateInfo.Version} is available",
+                Margin = new Avalonia.Thickness(0, 0, 0, 10)
+            });
+
+            stackPanel.Children.Add(new TextBlock
+            {
+                Text = $"Published: {updateInfo.PublishedAt.ToShortDateString()}",
+                FontSize = 12,
+                Foreground = Avalonia.Media.Brushes.Gray,
+                Margin = new Avalonia.Thickness(0, 0, 0, 15)
+            });
+
+            var buttonPanel = new StackPanel
+            {
+                Orientation = Avalonia.Layout.Orientation.Horizontal,
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+                Margin = new Avalonia.Thickness(0, 10, 0, 0)
+            };
+
+            var downloadButton = new Button
+            {
+                Content = "Download",
+                Margin = new Avalonia.Thickness(0, 0, 10, 0),
+                Padding = new Avalonia.Thickness(20, 5, 20, 5)
+            };
+
+            var cancelButton = new Button
+            {
+                Content = "Cancel",
+                Padding = new Avalonia.Thickness(20, 5, 20, 5)
+            };
+
+            downloadButton.Click += async (s, e) =>
+            {
+                updateWindow.Close();
+                await DownloadAndInstallUpdateAsync(updateInfo);
+            };
+
+            cancelButton.Click += (s, e) => updateWindow.Close();
+
+            buttonPanel.Children.Add(downloadButton);
+            buttonPanel.Children.Add(cancelButton);
+            stackPanel.Children.Add(buttonPanel);
+
+            updateWindow.Content = stackPanel;
+            updateWindow.ShowDialog(this);
+        }
+
+        private void ShowNoUpdatesDialog()
+        {
+            var noUpdateWindow = new Window
+            {
+                Title = "No Updates",
+                Width = 300,
+                Height = 120,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                CanResize = false
+            };
+
+            var panel = new StackPanel
+            {
+                Margin = new Avalonia.Thickness(20),
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
+            };
+
+            panel.Children.Add(new TextBlock
+            {
+                Text = "You are running the latest version.",
+                Margin = new Avalonia.Thickness(0, 0, 0, 10)
+            });
+
+            var okButton = new Button
+            {
+                Content = "OK",
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
+            };
+
+            okButton.Click += (s, e) => noUpdateWindow.Close();
+            panel.Children.Add(okButton);
+
+            noUpdateWindow.Content = panel;
+            noUpdateWindow.ShowDialog(this);
+        }
+
+        private void ShowUpdateErrorDialog()
+        {
+            var errorWindow = new Window
+            {
+                Title = "Update Check Failed",
+                Width = 300,
+                Height = 120,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                CanResize = false
+            };
+
+            var panel = new StackPanel
+            {
+                Margin = new Avalonia.Thickness(20),
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
+            };
+
+            panel.Children.Add(new TextBlock
+            {
+                Text = "Failed to check for updates.",
+                Margin = new Avalonia.Thickness(0, 0, 0, 10)
+            });
+
+            var okButton = new Button
+            {
+                Content = "OK",
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
+            };
+
+            okButton.Click += (s, e) => errorWindow.Close();
+            panel.Children.Add(okButton);
+
+            errorWindow.Content = panel;
+            errorWindow.ShowDialog(this);
+        }
+
+        private async Task DownloadAndInstallUpdateAsync(UpdateInfo updateInfo)
+        {
+            try
+            {
+                var updateService = new UpdateService();
+                var downloadPath = Path.Combine(Path.GetTempPath(), $"AudioToggle-{updateInfo.Version}.exe");
+
+                // Show download progress
+                var progressWindow = new Window
+                {
+                    Title = "Downloading Update",
+                    Width = 300,
+                    Height = 100,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                    CanResize = false
+                };
+
+                var progressText = new TextBlock
+                {
+                    Text = "Downloading update...",
+                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+                    VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+                };
+
+                progressWindow.Content = progressText;
+                await progressWindow.ShowDialog(this);
+
+                await updateService.DownloadUpdateAsync(updateInfo, downloadPath);
+
+                progressWindow.Close();
+
+                // Launch installer and exit
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = downloadPath,
+                    UseShellExecute = true
+                });
+
+                // Exit current application
+                this.Close();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error downloading update: {ex.Message}");
+                // Show error notification
+                var errorWindow = new Window
+                {
+                    Title = "Download Failed",
+                    Width = 300,
+                    Height = 120,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                    CanResize = false
+                };
+
+                var errorPanel = new StackPanel
+                {
+                    Margin = new Avalonia.Thickness(20),
+                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
+                };
+
+                errorPanel.Children.Add(new TextBlock
+                {
+                    Text = "Failed to download update.",
+                    Margin = new Avalonia.Thickness(0, 0, 0, 10)
+                });
+
+                var okButton = new Button
+                {
+                    Content = "OK",
+                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
+                };
+
+                okButton.Click += (s, e) => errorWindow.Close();
+                errorPanel.Children.Add(okButton);
+
+                errorWindow.Content = errorPanel;
+                await errorWindow.ShowDialog(this);
+            }
         }
     }
 }

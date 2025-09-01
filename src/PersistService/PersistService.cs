@@ -55,6 +55,101 @@ namespace AudioToggle
             return bool.TryParse(value, out bool result) ? result : defaultValue;
         }
 
+        /// <summary>
+        /// Loads settings from the JSON file into a Settings object
+        /// </summary>
+        public static Settings LoadSettings()
+        {
+            string filePath = GetJsonFilePath();
+            if (!File.Exists(filePath))
+            {
+                return new Settings();
+            }
+
+            try
+            {
+                // Try to load as structured Settings object first
+                var settingsJson = File.ReadAllText(filePath);
+                var settings = JsonSerializer.Deserialize<Settings>(settingsJson);
+
+                // If deserialization succeeds and we have structured data, return it
+                if (settings != null)
+                {
+                    return settings;
+                }
+            }
+            catch (JsonException)
+            {
+                // If structured loading fails, fall back to key-value loading
+            }
+
+            // Fallback: Load from key-value pairs (backward compatibility)
+            return LoadSettingsFromKeyValue();
+        }
+
+        /// <summary>
+        /// Saves a Settings object to the JSON file
+        /// </summary>
+        public static void SaveSettings(Settings settings)
+        {
+            if (settings == null)
+            {
+                throw new ArgumentNullException(nameof(settings));
+            }
+
+            string filePath = GetJsonFilePath();
+
+            // Use human-readable JSON formatting
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
+
+            File.WriteAllText(filePath, JsonSerializer.Serialize(settings, options));
+        }
+
+        /// <summary>
+        /// Loads settings from key-value pairs (for backward compatibility)
+        /// </summary>
+        private static Settings LoadSettingsFromKeyValue()
+        {
+            var settings = new Settings();
+
+            // Load individual settings from key-value store
+            settings.OutputHotkey = GetString("outputHotkey", settings.OutputHotkey);
+            settings.InputHotkey = GetString("inputHotkey", settings.InputHotkey);
+            settings.StartWithWindows = GetBool("startWithWindows", settings.StartWithWindows);
+            settings.ShowNotifications = GetBool("showNotifications", settings.ShowNotifications);
+            settings.AutoUpdateEnabled = GetBool("autoUpdateEnabled", settings.AutoUpdateEnabled);
+            settings.DefaultPlayback = GetString("defaultPlayback", settings.DefaultPlayback);
+            settings.DefaultInput = GetString("defaultInput", settings.DefaultInput);
+            settings.LastUpdateCheck = GetString("lastUpdateCheck", settings.LastUpdateCheck);
+
+            // Load enabled devices lists
+            var enabledDevicesJson = GetString("enabledDevices", "[]");
+            try
+            {
+                settings.EnabledDevices = JsonSerializer.Deserialize<List<string>>(enabledDevicesJson) ?? new List<string>();
+            }
+            catch
+            {
+                settings.EnabledDevices = new List<string>();
+            }
+
+            var enabledInputDevicesJson = GetString("enabledInputDevices", "[]");
+            try
+            {
+                settings.EnabledInputDevices = JsonSerializer.Deserialize<List<string>>(enabledInputDevicesJson) ?? new List<string>();
+            }
+            catch
+            {
+                settings.EnabledInputDevices = new List<string>();
+            }
+
+            return settings;
+        }
+
         // Gets the path to the JSON file next to the binaries
         private static string GetJsonFilePath()
         {
