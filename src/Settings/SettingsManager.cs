@@ -116,23 +116,6 @@ namespace AudioToggle
         }
 
         /// <summary>
-        /// Gets or sets whether auto updates are enabled
-        /// </summary>
-        public bool AutoUpdateEnabled
-        {
-            get => _currentSettings.AutoUpdateEnabled;
-            set
-            {
-                if (_currentSettings.AutoUpdateEnabled != value)
-                {
-                    _currentSettings.AutoUpdateEnabled = value;
-                    HasUnsavedChanges = true;
-                    OnPropertyChanged();
-                }
-            }
-        }
-
-        /// <summary>
         /// Gets or sets the default playback device
         /// </summary>
         public string DefaultPlayback
@@ -175,25 +158,6 @@ namespace AudioToggle
         /// Gets the enabled input devices list
         /// </summary>
         public System.Collections.Generic.List<string> EnabledInputDevices => _currentSettings.EnabledInputDevices;
-
-        /// <summary>
-        /// Updates the last update check date to today
-        /// </summary>
-        public void UpdateLastUpdateCheck()
-        {
-            var today = DateTime.Now.ToString("yyyy-MM-dd");
-            if (_currentSettings.LastUpdateCheck != today)
-            {
-                _currentSettings.LastUpdateCheck = today;
-                HasUnsavedChanges = true;
-                OnPropertyChanged(nameof(LastUpdateCheck));
-            }
-        }
-
-        /// <summary>
-        /// Gets the last update check date
-        /// </summary>
-        public string LastUpdateCheck => _currentSettings.LastUpdateCheck;
 
         /// <summary>
         /// Saves the current settings to disk

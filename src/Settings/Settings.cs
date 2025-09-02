@@ -10,16 +10,16 @@ namespace AudioToggle
     public class Settings
     {
         /// <summary>
-        /// Hotkey for switching output devices (e.g., "Ctrl+Shift+F1")
+        /// Hotkey for switching output devices (e.g., "Ctrl+F1")
         /// </summary>
         [JsonPropertyName("outputHotkey")]
-        public string OutputHotkey { get; set; } = "Ctrl+Shift+F1";
+        public string OutputHotkey { get; set; } = "Ctrl+F1";
 
         /// <summary>
-        /// Hotkey for switching input devices (e.g., "Ctrl+Shift+F2")
+        /// Hotkey for switching input devices (e.g., "Ctrl+F2")
         /// </summary>
         [JsonPropertyName("inputHotkey")]
-        public string InputHotkey { get; set; } = "Ctrl+Shift+F2";
+        public string InputHotkey { get; set; } = "Ctrl+F2";
 
         /// <summary>
         /// List of enabled output device names
@@ -46,12 +46,6 @@ namespace AudioToggle
         public bool ShowNotifications { get; set; } = true;
 
         /// <summary>
-        /// Whether automatic updates are enabled
-        /// </summary>
-        [JsonPropertyName("autoUpdateEnabled")]
-        public bool AutoUpdateEnabled { get; set; } = true;
-
-        /// <summary>
         /// The default playback device name
         /// </summary>
         [JsonPropertyName("defaultPlayback")]
@@ -62,12 +56,6 @@ namespace AudioToggle
         /// </summary>
         [JsonPropertyName("defaultInput")]
         public string DefaultInput { get; set; } = string.Empty;
-
-        /// <summary>
-        /// The date of the last update check (format: yyyy-MM-dd)
-        /// </summary>
-        [JsonPropertyName("lastUpdateCheck")]
-        public string LastUpdateCheck { get; set; } = string.Empty;
 
         /// <summary>
         /// Creates a deep copy of the settings
@@ -82,10 +70,8 @@ namespace AudioToggle
                 EnabledInputDevices = new List<string>(this.EnabledInputDevices),
                 StartWithWindows = this.StartWithWindows,
                 ShowNotifications = this.ShowNotifications,
-                AutoUpdateEnabled = this.AutoUpdateEnabled,
                 DefaultPlayback = this.DefaultPlayback,
-                DefaultInput = this.DefaultInput,
-                LastUpdateCheck = this.LastUpdateCheck
+                DefaultInput = this.DefaultInput
             };
         }
 

@@ -29,7 +29,7 @@ A Windows utility for quickly switching between audio devices using customizable
 
 ## Default Configuration
 
-- **Hotkey**: Ctrl+Shift+F1
+- **Hotkey**: Ctrl+F1
 - **Devices**: All available audio devices
 - **Notifications**: Enabled
 

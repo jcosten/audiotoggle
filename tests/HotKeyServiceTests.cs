@@ -15,12 +15,11 @@ namespace AudioToggle.Tests
             // Note: Would need to instantiate the service or mock dependencies
 
             // Arrange
-            string hotkeyString = "Ctrl+Shift+F1";
+            string hotkeyString = "Ctrl+F1";
 
             // Act & Assert
             Assert.That(hotkeyString, Is.Not.Null.And.Not.Empty);
             Assert.That(hotkeyString, Does.Contain("Ctrl"));
-            Assert.That(hotkeyString, Does.Contain("Shift"));
             Assert.That(hotkeyString, Does.Contain("F1"));
         }
 

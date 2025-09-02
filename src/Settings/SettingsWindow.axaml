@@ -39,7 +39,7 @@
                     </Grid.ColumnDefinitions>
                     
                     <TextBlock Text="Switch Output Device:" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"/>
-                    <TextBox x:Name="OutputHotkeyTextBox" Grid.Row="0" Grid.Column="1" Text="Ctrl+Shift+F1" IsReadOnly="False" Margin="5" Watermark="Press keys to set hotkey..."/>
+                    <TextBox x:Name="OutputHotkeyTextBox" Grid.Row="0" Grid.Column="1" Text="Ctrl+F1" IsReadOnly="False" Margin="5" Watermark="Press keys to set hotkey..."/>
                     
                     <Button x:Name="ResetOutputHotkeyButton" Grid.Row="1" Grid.Column="1" Content="Reset to Default" Margin="5" HorizontalAlignment="Left"/>
                 </Grid>
@@ -78,7 +78,7 @@
                     </Grid.ColumnDefinitions>
                     
                     <TextBlock Text="Switch Input Device:" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"/>
-                    <TextBox x:Name="InputHotkeyTextBox" Grid.Row="0" Grid.Column="1" Text="Ctrl+Shift+F2" IsReadOnly="False" Margin="5" Watermark="Press keys to set hotkey..."/>
+                    <TextBox x:Name="InputHotkeyTextBox" Grid.Row="0" Grid.Column="1" Text="Ctrl+F2" IsReadOnly="False" Margin="5" Watermark="Press keys to set hotkey..."/>
                     
                     <Button x:Name="ResetInputHotkeyButton" Grid.Row="1" Grid.Column="1" Content="Reset to Default" Margin="5" HorizontalAlignment="Left"/>
                 </Grid>
@@ -93,14 +93,8 @@
                 
                 <Separator Margin="10"/>
                 
-                <TextBlock Text="Updates:" Margin="10" FontWeight="Bold" />
-                <CheckBox x:Name="AutoUpdateCheckBox" Content="Automatically check for updates" Margin="10" IsChecked="True"/>
-                <Button x:Name="CheckForUpdatesButton" Content="Check for Updates Now" Margin="10" HorizontalAlignment="Left"/>
-                
-                <Separator Margin="10"/>
-                
                 <TextBlock Text="About:" Margin="10" FontWeight="Bold" />
-                <TextBlock Text="AudioToggle v1.1.0" Margin="15,5"/>
+                <TextBlock Text="AudioToggle v1.1.1" Margin="15,5"/>
                 <TextBlock Text="Quick audio toggle utility by Jeremy Costen" Margin="15,5" Foreground="Gray"/>
                 <Button x:Name="GitHubLinkButton" Content="https://github.com/jcosten/audiotoggle/" Margin="15,5" Background="Transparent" BorderThickness="0" Foreground="LightBlue" Cursor="Hand" Click="GitHubLinkButton_Click"/>
             </StackPanel>

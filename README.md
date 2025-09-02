@@ -22,11 +22,11 @@ Unzip release anywhere you keep your apps/utilities. Run the exe.
 
 ### First Time Setup
 2. **Select Devices**: Check the audio devices you want to cycle through
-3. **Set Hotkey**: Click in the hotkey box and press your desired key combination **Default Hotkey**: Ctrl+Shift+F1
+3. **Set Hotkey**: Click in the hotkey box and press your desired key combination **Default Hotkey**: Ctrl+F1
 4. **Save**: Settings are automatically saved
 
 ### Basic Usage
-1. Press your configured hotkey (default: Ctrl+Shift+F1)
+1. Press your configured hotkey (default: Ctrl+F1)
 2. Audio switches to the next enabled device in the list
 3. Green checkmark shows current default device in settings
 

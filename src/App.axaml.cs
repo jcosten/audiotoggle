@@ -15,7 +15,6 @@ namespace AudioToggle
     public partial class App : Application
     {
         private AudioServiceAdapter audioService;
-        private IUpdateService updateService;
         
         public override void Initialize()
         {
@@ -23,7 +22,6 @@ namespace AudioToggle
             Debug.WriteLine("System Diagnostics Debug");
 
             audioService = new AudioServiceAdapter();
-            updateService = new UpdateService();
             
             // Load saved hotkeys or use defaults
             RegisterSavedOutputHotkey();
@@ -56,7 +54,7 @@ namespace AudioToggle
         {
             try
             {
-                var savedHotkey = PersistService.GetString("outputHotkey", "Ctrl+Shift+F1");
+                var savedHotkey = PersistService.GetString("outputHotkey", "Ctrl+F1");
                 var (key, modifiers) = hotKeyService.ParseHotkeyString(savedHotkey);
                 
                 if (key.HasValue)
@@ -85,7 +83,7 @@ namespace AudioToggle
         {
             try
             {
-                var savedHotkey = PersistService.GetString("inputHotkey", "Ctrl+Shift+F2");
+                var savedHotkey = PersistService.GetString("inputHotkey", "Ctrl+F2");
                 var (key, modifiers) = hotKeyService.ParseHotkeyString(savedHotkey);
                 
                 if (key.HasValue)
@@ -262,9 +260,6 @@ namespace AudioToggle
                 SettingsWindow.ShowInstance();
             }
 
-            // Check for updates if enabled
-            _ = CheckForUpdatesAsync();
-
             base.OnFrameworkInitializationCompleted();
         }
 
@@ -281,244 +276,6 @@ namespace AudioToggle
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
                 desktop.Shutdown();
-            }
-        }
-
-        private async Task CheckForUpdatesAsync()
-        {
-            try
-            {
-                // Check if auto-update is enabled
-                var autoUpdateEnabled = PersistService.GetBool("autoUpdateEnabled", true);
-                if (!autoUpdateEnabled) return;
-
-                // Check if we already checked today
-                var lastCheckDate = PersistService.GetString("lastUpdateCheck", "");
-                var today = DateTime.Now.ToString("yyyy-MM-dd");
-                if (lastCheckDate == today) return;
-
-                var updateInfo = await updateService.CheckForUpdatesAsync();
-                if (updateInfo != null && updateService.IsUpdateAvailable(updateInfo))
-                {
-                    // Show update notification
-                    ShowUpdateNotification(updateInfo);
-                }
-
-                // Update last check date
-                PersistService.StoreString("lastUpdateCheck", today);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Error checking for updates: {ex.Message}");
-            }
-        }
-
-        private void ShowUpdateNotification(UpdateInfo updateInfo)
-        {
-            try
-            {
-                var notificationWindow = new Window
-                {
-                    Title = "Update Available",
-                    Width = 400,
-                    Height = 250,
-                    WindowStartupLocation = WindowStartupLocation.CenterScreen,
-                    CanResize = false,
-                    Icon = new WindowIcon("avares://AudioToggle/assets/tray_icon.ico")
-                };
-
-                var stackPanel = new StackPanel { Margin = new Avalonia.Thickness(20) };
-
-                stackPanel.Children.Add(new TextBlock
-                {
-                    Text = "AudioToggle Update Available",
-                    FontWeight = Avalonia.Media.FontWeight.Bold,
-                    FontSize = 16,
-                    Margin = new Avalonia.Thickness(0, 0, 0, 10)
-                });
-
-                stackPanel.Children.Add(new TextBlock
-                {
-                    Text = $"Version {updateInfo.Version} is available",
-                    Margin = new Avalonia.Thickness(0, 0, 0, 10)
-                });
-
-                stackPanel.Children.Add(new TextBlock
-                {
-                    Text = $"Published: {updateInfo.PublishedAt.ToShortDateString()}",
-                    FontSize = 12,
-                    Foreground = Avalonia.Media.Brushes.Gray,
-                    Margin = new Avalonia.Thickness(0, 0, 0, 15)
-                });
-
-                var buttonPanel = new StackPanel
-                {
-                    Orientation = Avalonia.Layout.Orientation.Horizontal,
-                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
-                    Margin = new Avalonia.Thickness(0, 10, 0, 0)
-                };
-
-                var downloadButton = new Button
-                {
-                    Content = "Download",
-                    Margin = new Avalonia.Thickness(0, 0, 10, 0),
-                    Padding = new Avalonia.Thickness(20, 5, 20, 5)
-                };
-
-                var laterButton = new Button
-                {
-                    Content = "Later",
-                    Padding = new Avalonia.Thickness(20, 5, 20, 5)
-                };
-
-                downloadButton.Click += async (s, e) =>
-                {
-                    notificationWindow.Close();
-                    await DownloadAndInstallUpdateAsync(updateInfo);
-                };
-
-                laterButton.Click += (s, e) => notificationWindow.Close();
-
-                buttonPanel.Children.Add(downloadButton);
-                buttonPanel.Children.Add(laterButton);
-                stackPanel.Children.Add(buttonPanel);
-
-                notificationWindow.Content = stackPanel;
-                notificationWindow.Show();
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Error showing update notification: {ex.Message}");
-            }
-        }
-
-        private async Task DownloadAndInstallUpdateAsync(UpdateInfo updateInfo)
-        {
-            try
-            {
-                var updateService = new UpdateService();
-                var downloadPath = Path.Combine(Path.GetTempPath(), $"AudioToggle-{updateInfo.Version}.zip");
-
-                // Show download progress
-                var progressWindow = new Window
-                {
-                    Title = "Downloading Update",
-                    Width = 300,
-                    Height = 100,
-                    WindowStartupLocation = WindowStartupLocation.CenterScreen,
-                    CanResize = false
-                };
-
-                var progressText = new TextBlock
-                {
-                    Text = "Downloading update...",
-                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
-                    VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
-                };
-
-                progressWindow.Content = progressText;
-                progressWindow.Show();
-
-                await updateService.DownloadUpdateAsync(updateInfo, downloadPath);
-
-                progressWindow.Close();
-
-                // Get the current application directory
-                var appDirectory = AppDomain.CurrentDomain.BaseDirectory;
-                var appExecutable = Process.GetCurrentProcess().MainModule?.FileName;
-                if (string.IsNullOrEmpty(appExecutable))
-                {
-                    appExecutable = Path.Combine(appDirectory, "AudioToggle.exe");
-                }
-
-                // Extract ZIP file to temp location first
-                var extractPath = Path.Combine(Path.GetTempPath(), $"AudioToggle-{updateInfo.Version}");
-                if (Directory.Exists(extractPath))
-                {
-                    Directory.Delete(extractPath, true);
-                }
-                Directory.CreateDirectory(extractPath);
-
-                System.IO.Compression.ZipFile.ExtractToDirectory(downloadPath, extractPath);
-
-                // Copy all files from extracted ZIP to application directory
-                foreach (var file in Directory.GetFiles(extractPath, "*", SearchOption.AllDirectories))
-                {
-                    var relativePath = Path.GetRelativePath(extractPath, file);
-                    var targetPath = Path.Combine(appDirectory, relativePath);
-
-                    // Ensure target directory exists
-                    var targetDir = Path.GetDirectoryName(targetPath);
-                    if (!Directory.Exists(targetDir))
-                    {
-                        Directory.CreateDirectory(targetDir);
-                    }
-
-                    // Copy file (this will overwrite existing files)
-                    File.Copy(file, targetPath, true);
-                    System.Diagnostics.Debug.WriteLine($"Updated file: {relativePath}");
-                }
-
-                // Create a restart script
-                var restartScript = Path.Combine(appDirectory, "restart.bat");
-                var scriptContent = $@"
-@echo off
-timeout /t 2 /nobreak > nul
-start "" ""{appExecutable}""
-del ""%~f0""
-";
-                File.WriteAllText(restartScript, scriptContent);
-
-                // Launch the restart script and exit
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = restartScript,
-                    UseShellExecute = true,
-                    WindowStyle = ProcessWindowStyle.Hidden
-                });
-
-                // Exit current application
-                if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-                {
-                    desktop.Shutdown();
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error downloading update: {ex.Message}");
-                // Show error notification
-                var errorWindow = new Window
-                {
-                    Title = "Download Failed",
-                    Width = 300,
-                    Height = 120,
-                    WindowStartupLocation = WindowStartupLocation.CenterScreen,
-                    CanResize = false
-                };
-
-                var errorPanel = new StackPanel
-                {
-                    Margin = new Avalonia.Thickness(20),
-                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
-                };
-
-                errorPanel.Children.Add(new TextBlock
-                {
-                    Text = "Failed to download update.",
-                    Margin = new Avalonia.Thickness(0, 0, 0, 10)
-                });
-
-                var okButton = new Button
-                {
-                    Content = "OK",
-                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
-                };
-
-                okButton.Click += (s, e) => errorWindow.Close();
-                errorPanel.Children.Add(okButton);
-
-                errorWindow.Content = errorPanel;
-                errorWindow.Show();
             }
         }
     }

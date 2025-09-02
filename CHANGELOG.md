@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.1] - 2025-09-01
+
+### Changed
+- Default hotkeys now Ctrl+F1 & Ctrl+F2
+
+### Added
+- Support for input devices
+
 ## [1.1.0] - 2025-09-01
 
 ### Added

@@ -121,10 +121,8 @@ namespace AudioToggle
             settings.InputHotkey = GetString("inputHotkey", settings.InputHotkey);
             settings.StartWithWindows = GetBool("startWithWindows", settings.StartWithWindows);
             settings.ShowNotifications = GetBool("showNotifications", settings.ShowNotifications);
-            settings.AutoUpdateEnabled = GetBool("autoUpdateEnabled", settings.AutoUpdateEnabled);
             settings.DefaultPlayback = GetString("defaultPlayback", settings.DefaultPlayback);
             settings.DefaultInput = GetString("defaultInput", settings.DefaultInput);
-            settings.LastUpdateCheck = GetString("lastUpdateCheck", settings.LastUpdateCheck);
 
             // Load enabled devices lists
             var enabledDevicesJson = GetString("enabledDevices", "[]");
