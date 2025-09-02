@@ -12,21 +12,21 @@ namespace AudioToggle
         private static CoreAudioController Controller => _controller.Value;
         
         // Cache devices to avoid repeated enumeration
-        private List<CoreAudioDevice> _cachedPlaybackDevices;
+        private List<CoreAudioDevice> _cachedOutputDevices;
         private List<CoreAudioDevice> _cachedInputDevices;
         private DateTime _lastCacheUpdate = DateTime.MinValue;
         private readonly TimeSpan _cacheValidTime = TimeSpan.FromSeconds(5); // Cache for 5 seconds
 
-        private List<CoreAudioDevice> GetCachedActivePlaybackDevices()
+        private List<CoreAudioDevice> GetCachedActiveOutputDevices()
         {
-            if (_cachedPlaybackDevices == null || DateTime.Now - _lastCacheUpdate > _cacheValidTime)
+            if (_cachedOutputDevices == null || DateTime.Now - _lastCacheUpdate > _cacheValidTime)
             {
-                _cachedPlaybackDevices = Controller.GetPlaybackDevices()
+                _cachedOutputDevices = Controller.GetPlaybackDevices()
                     .Where(d => d.State == DeviceState.Active)
                     .ToList();
                 _lastCacheUpdate = DateTime.Now;
             }
-            return _cachedPlaybackDevices;
+            return _cachedOutputDevices;
         }
 
         private List<CoreAudioDevice> GetCachedActiveInputDevices()
@@ -41,7 +41,7 @@ namespace AudioToggle
             return _cachedInputDevices;
         }
 
-        public (string Name, string ID)? GetDefaultPlaybackDevice()
+        public (string Name, string ID)? GetDefaultOutputDevice()
         {
             var device = Controller.DefaultPlaybackDevice;
             if (device != null)
@@ -51,17 +51,17 @@ namespace AudioToggle
             return null;
         }
 
-        public List<string> GetAudioDeviceNames()
+        public List<string> GetOutputDeviceNames()
         {
-            return GetCachedActivePlaybackDevices()
+            return GetCachedActiveOutputDevices()
                 .Select(device => device.FullName)
                 .ToList();
         }
 
         // method to get device by friendly name
-        public (string Name, string ID)? GetDeviceByFriendlyName(string friendlyName)
+        public (string Name, string ID)? GetOutputDeviceByFriendlyName(string friendlyName)
         {
-            var device = GetCachedActivePlaybackDevices()
+            var device = GetCachedActiveOutputDevices()
                 .FirstOrDefault(d => d.FullName.Equals(friendlyName, StringComparison.OrdinalIgnoreCase));
             
             if (device != null)
@@ -71,19 +71,19 @@ namespace AudioToggle
             return null;
         }
 
-        public bool SetDefaultPlaybackDevice(string friendlyName)
+        public bool SetDefaultOutputDevice(string friendlyName)
         {
             try
             {
                 // Find device directly from cache instead of multiple lookups
-                var device = GetCachedActivePlaybackDevices()
+                var device = GetCachedActiveOutputDevices()
                     .FirstOrDefault(d => d.FullName.Equals(friendlyName, StringComparison.OrdinalIgnoreCase));
 
                 if (device == null)
                 {
                     // If not in cache, refresh and try again
                     InvalidateCache();
-                    device = GetCachedActivePlaybackDevices()
+                    device = GetCachedActiveOutputDevices()
                         .FirstOrDefault(d => d.FullName.Equals(friendlyName, StringComparison.OrdinalIgnoreCase));
                 }
 
@@ -98,7 +98,7 @@ namespace AudioToggle
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error setting default playback device: {ex.Message}");
+                Console.WriteLine($"Error setting default Output device: {ex.Message}");
                 return false;
             }
         }
@@ -167,7 +167,7 @@ namespace AudioToggle
 
         public void InvalidateCache()
         {
-            _cachedPlaybackDevices = null;
+            _cachedOutputDevices = null;
             _cachedInputDevices = null;
             _lastCacheUpdate = DateTime.MinValue;
         }

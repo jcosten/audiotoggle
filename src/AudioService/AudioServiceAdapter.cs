@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text.Json.Serialization;
-using System.Diagnostics.CodeAnalysis;
 
 namespace AudioToggle
 {
@@ -20,16 +18,16 @@ namespace AudioToggle
                 throw new PlatformNotSupportedException("AudioService is only supported on Windows.");
         }
 
-        public List<string> GetAudioDeviceNames() => impl.GetAudioDeviceNames();
+        public List<string> GetOutputDeviceNames() => impl.GetOutputDeviceNames();
 
-        public (string Name, string ID)? GetDeviceByFriendlyName(string friendlyName)
-            => impl.GetDeviceByFriendlyName(friendlyName);
+        public (string Name, string ID)? GetOutputDeviceByFriendlyName(string friendlyName)
+            => impl.GetOutputDeviceByFriendlyName(friendlyName);
 
-        public bool SetDefaultPlaybackDevice(string friendlyName)
-            => impl.SetDefaultPlaybackDevice(friendlyName);
+        public bool SetDefaultOutputDevice(string friendlyName)
+            => impl.SetDefaultOutputDevice(friendlyName);
 
-        public (string Name, string ID)? GetDefaultPlaybackDevice()
-            => impl.GetDefaultPlaybackDevice();
+        public (string Name, string ID)? GetDefaultOutputDevice()
+            => impl.GetDefaultOutputDevice();
 
         public void InvalidateCache()
             => impl.InvalidateCache();
@@ -46,20 +44,20 @@ namespace AudioToggle
         public (string Name, string ID)? GetDefaultInputDevice()
             => impl.GetDefaultInputDevice();
 
-        public List<string> GetEnabledDevicesForCycling()
+        public List<string> GetEnabledOutputDevicesForCycling()
         {
             var enabledDevicesJson = PersistService.GetString("enabledDevices", "[]");
             try
             {
                 var enabledDevices = System.Text.Json.JsonSerializer.Deserialize(enabledDevicesJson, typeof(List<string>)) as List<string> ?? new List<string>();
                 // Filter to only include devices that actually exist
-                var allDevices = GetAudioDeviceNames();
+                var allDevices = GetOutputDeviceNames();
                 return enabledDevices.Where(name => allDevices.Contains(name)).ToList();
             }
             catch
             {
                 // Fallback to all devices if there's an issue
-                return GetAudioDeviceNames();
+                return GetOutputDeviceNames();
             }
         }
 

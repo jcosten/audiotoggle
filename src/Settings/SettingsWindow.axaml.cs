@@ -127,8 +127,8 @@ namespace AudioToggle
 
             // Invalidate cache to ensure we get fresh device information
             this.audioServiceAdapter.InvalidateCache();
-            
-            var deviceNames = this.audioServiceAdapter.GetAudioDeviceNames();
+
+            var deviceNames = this.audioServiceAdapter.GetOutputDeviceNames();
             var defaultDevice = GetDefaultDeviceName();
             var enabledDevices = GetEnabledDevices();
             deviceViewModels = new List<DeviceViewModel>();
@@ -649,7 +649,7 @@ namespace AudioToggle
 
         private string GetDefaultDeviceName()
         {
-            var defaultDevice = this.audioServiceAdapter.GetDefaultPlaybackDevice();
+            var defaultDevice = this.audioServiceAdapter.GetDefaultOutputDevice();
             return defaultDevice?.Name;
         }
 

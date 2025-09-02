@@ -23,6 +23,19 @@ namespace AudioToggle
 
             audioService = new AudioServiceAdapter();
             
+            // Initialize the WindowsAudioService controller at startup
+            // This ensures the CoreAudioController is created early to avoid delays
+            try
+            {
+                // Trigger lazy initialization of the controller by calling a method that uses it
+                audioService.GetOutputDeviceNames();
+                Debug.WriteLine("Audio service controller initialized successfully");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to initialize audio service controller: {ex.Message}");
+            }
+            
             // Load saved hotkeys or use defaults
             RegisterSavedOutputHotkey();
             RegisterSavedInputHotkey();
@@ -108,64 +121,18 @@ namespace AudioToggle
             }
         }
 
-        private void OnHotKeyPressed()
-        {
-            try
-            {
-                var enabledDevices = audioService.GetEnabledDevicesForCycling();
-                if (enabledDevices.Count == 0)
-                {
-                    Debug.WriteLine("No enabled devices for cycling");
-                    return;
-                }
-
-                var currentDefault = audioService.GetDefaultPlaybackDevice();
-                int currentIndex = -1;
-                
-                if (currentDefault.HasValue)
-                {
-                    currentIndex = enabledDevices.IndexOf(currentDefault.Value.Name);
-                }
-
-                // Move to next device in the list (or first if current not found)
-                int nextIndex = (currentIndex + 1) % enabledDevices.Count;
-                string nextDevice = enabledDevices[nextIndex];
-                
-                bool success = audioService.SetDefaultPlaybackDevice(nextDevice);
-                if (success)
-                {
-                    PersistService.StoreString("defaultPlayback", nextDevice);
-                    Debug.WriteLine($"Switched to audio device: {nextDevice}");
-                    
-                    // Show notification
-                    NotificationService.ShowDeviceNotification(nextDevice);
-                    
-                    // Update the settings window UI if it exists
-                    SettingsWindow.UpdateDefaultDevice(nextDevice);
-                }
-                else
-                {
-                    Debug.WriteLine($"Failed to switch to audio device: {nextDevice}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Error in hotkey callback: {ex.Message}");
-            }
-        }
-
         private void OnOutputHotKeyPressed()
         {
             try
             {
-                var enabledDevices = audioService.GetEnabledDevicesForCycling();
+                var enabledDevices = audioService.GetEnabledOutputDevicesForCycling();
                 if (enabledDevices.Count == 0)
                 {
                     Debug.WriteLine("No enabled output devices for cycling");
                     return;
                 }
 
-                var currentDefault = audioService.GetDefaultPlaybackDevice();
+                var currentDefault = audioService.GetDefaultOutputDevice();
                 int currentIndex = -1;
                 
                 if (currentDefault.HasValue)
@@ -177,7 +144,7 @@ namespace AudioToggle
                 int nextIndex = (currentIndex + 1) % enabledDevices.Count;
                 string nextDevice = enabledDevices[nextIndex];
                 
-                bool success = audioService.SetDefaultPlaybackDevice(nextDevice);
+                bool success = audioService.SetDefaultOutputDevice(nextDevice);
                 if (success)
                 {
                     PersistService.StoreString("defaultPlayback", nextDevice);
